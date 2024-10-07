@@ -73,8 +73,8 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
 
     main:
         ...
-
-        JMP main
+    -----------------------------
+    JMP main
     dolzina:
         DB 10    ; število elementov v seznamu
     seznam:
@@ -90,24 +90,31 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
         DB 54
     minimum:
         DB 0    ; na koncu bo tu minimum
-    
+
     main:
     MOV D, 1
     MOV C, [D+2]
     MOV [minimum], C
     INC D
-    
+
     looop:
     	MOV C, [D+2]
     	CMP C, [minimum]
     	JC small
     	back:
     	CMP D, [dolzina]
+    	JNC end
+    	INC D
+    	JMP looop
     
-    
+
     small:
     	MOV [minimum], C
     	JMP back
+    end:
+    	MOV C, [minimum]
+    	MOV [232], C
+    	HLT
 
 
 ## Indeks najmanjšega števila v seznamu
@@ -129,6 +136,29 @@ Zapišite funkcijo `poisci_minimum`, ki v register `B` shrani indeks najmanjšeg
         POP C
         HLT
 
+    poisci_minimum:
+	    PUSH A
+	    MOV B, [A]
+	    INC A
+	    loop:
+	    CMP B, [A]
+	    JNC manj
+	    back:
+	    INC A
+	    CMP A, C
+	    JNC fin
+	    JMP loop
+
+	    manj:
+	    MOV B, [A]
+	    MOV D, A
+	    JMP back
+    
+	    fin:
+	    POP A
+	    MOV B, D
+	    RET
+
 ## Urejanje seznama
 
 Zapišite funkcijo `uredi`, ki elemente v rezini [A:C] uredi od najmanjšega do največjega. Pri tem naj vrednosti vseh registrov pusti pri miru. Eden najenostavnejših algoritmov za urejanje je urejanje z izbiranjem. V njem se zapeljete čez seznam, poiščete indeks najmanjšega elementa, nato pa ta element zamenjate s tistim na prvem mestu. Postopek nadaljujete s preostankom seznama, dokler ne pridete do konca.
@@ -142,3 +172,19 @@ Delovanje lahko preverite s sledečim programom:
         ADD C, [dolzina]
         CALL uredi          ; pokličemo funkcijo za urejanje
         HLT                 ; prekinemo izvajanje
+
+    uredi:
+    	CALL poisci_minimum
+    	PUSH [A]
+    	MOV D, [B]
+    	MOV [A], D
+    	POP D
+    	MOV [B], D
+    	INC A
+    	CMP A, C
+    	JZ end
+    	JMP uredi
+    
+    	end:
+    	RET
+	
