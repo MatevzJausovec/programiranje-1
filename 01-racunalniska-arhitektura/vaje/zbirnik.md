@@ -75,39 +75,39 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
         ...
 
         JMP main
-dolzina:
-    DB 10    ; število elementov v seznamu
-seznam:
-    DB 50    ; seznam
-    DB 56
-    DB 60
-    DB 46
-    DB 44
-    DB 58
-    DB 42
-    DB 52
-    DB 48
-    DB 54
-minimum:
-    DB 0    ; na koncu bo tu minimum
-
-main:
-MOV D, 1
-MOV C, [D+2]
-MOV [minimum], C
-INC D
-
-looop:
-	MOV C, [D+2]
-	CMP C, [minimum]
-	JC small
-	back:
-	CMP D, [dolzina]
-	
-
-small:
-	MOV [minimum], C
-	JMP back
+    dolzina:
+        DB 10    ; število elementov v seznamu
+    seznam:
+        DB 50    ; seznam
+        DB 56
+        DB 60
+        DB 46
+        DB 44
+        DB 58
+        DB 42
+        DB 52
+        DB 48
+        DB 54
+    minimum:
+        DB 0    ; na koncu bo tu minimum
+    
+    main:
+    MOV D, 1
+    MOV C, [D+2]
+    MOV [minimum], C
+    INC D
+    
+    looop:
+    	MOV C, [D+2]
+    	CMP C, [minimum]
+    	JC small
+    	back:
+    	CMP D, [dolzina]
+    
+    
+    small:
+    	MOV [minimum], C
+    	JMP back
 
 
 ## Indeks najmanjšega števila v seznamu
