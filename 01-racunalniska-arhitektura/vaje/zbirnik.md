@@ -6,9 +6,49 @@ Pri vseh nalogah se vam pod razdelkom **RAM** splača nastaviti _View_ na _Decim
 
 Zapišite program, ki v register `A` zapiše ostanek pri deljenju registra `A` z registrom `B`.
 
+    Numb 1
+    
+    MOV A, 27
+    MOV B, 10
+    MOV C, 232
+    
+    main:
+	    CMP B, A
+	    JC odstej
+	    MOV [C], A
+	    HLT
+    
+    odstej:
+	    SUB A, B
+	    JMP main
+    
+    Numb 2
+    
+    MOV A, 27
+    MOV B, 10
+    MOV C, A
+    
+    DIV B
+    MUL B
+    SUB C, A
+    MOV [232], C
+
 ## Zaporedna števila
 
 Zapišite program, ki na sklad zaporedno postavlja števila od 13 do 42.
+
+    MOV A, 13
+    MOV B, 42
+    
+    looper:
+    PUSH A
+    INC A
+    CMP B, A
+    JC end
+    JMP looper
+    
+    end:
+    HLT
 
 ## Iskanje najmanjšega števila v seznamu
 
@@ -33,6 +73,42 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
 
     main:
         ...
+
+        JMP main
+dolzina:
+    DB 10    ; število elementov v seznamu
+seznam:
+    DB 50    ; seznam
+    DB 56
+    DB 60
+    DB 46
+    DB 44
+    DB 58
+    DB 42
+    DB 52
+    DB 48
+    DB 54
+minimum:
+    DB 0    ; na koncu bo tu minimum
+
+main:
+MOV D, 1
+MOV C, [D+2]
+MOV [minimum], C
+INC D
+
+looop:
+	MOV C, [D+2]
+	CMP C, [minimum]
+	JC small
+	back:
+	CMP D, [dolzina]
+	
+
+small:
+	MOV [minimum], C
+	JMP back
+
 
 ## Indeks najmanjšega števila v seznamu
 
