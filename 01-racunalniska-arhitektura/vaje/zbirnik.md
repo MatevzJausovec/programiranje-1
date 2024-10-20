@@ -50,6 +50,10 @@ Zapišite program, ki na sklad zaporedno postavlja števila od 13 do 42.
     end:
     HLT
 
+## Menjava pomnilniških celic
+
+Poleg registrov in sklada lahko podatke shranjujemo tudi v pomnilniške celice. To storimo prek naslovov oblike `[N]`, kjer je `N` zaporedni indeks mesta v pomnilniku, ali `[R]`, kjer je `R` ime registra, v katerem je shranjen indeks. Zapišite program, ki zamenja vsebini pomnilniških celic na naslovih `[A]` in `[B]`.
+
 ## Iskanje najmanjšega števila v seznamu
 
 Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj bo podan na začetku pomnilnika in sicer tako, da je na prvih dveh bajtih ukaz za skok na začetek programa, v tretjem bajtu dolžina seznama, v naslednjih bajtih zaporedoma elementi seznama, takoj za njimi pa bajt, v katerega naj se zapiše najmanjše število.
