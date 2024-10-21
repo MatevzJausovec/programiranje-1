@@ -4,7 +4,16 @@
 
 (** Števke *)
 
-let stevke _ _ = failwith __LOC__
+let stevke baza numb = 
+   let rec stevke' acc baza numb =
+      let a = numb / baza in
+      begin match a with
+      | 0 -> numb::acc
+      | _ -> stevke' ((numb - (baza * a))::acc) baza a
+      end
+   in
+  stevke' [] baza numb
+  
 (* let primer_1_1 = stevke 10 12345 *)
 (* let primer_1_2 = stevke 2 42 *)
 (* let primer_1_3 = stevke 16 ((3 * 16 * 16 * 16) + (14 * 16 * 16) + (15 * 16) + 9) *)
