@@ -20,13 +20,31 @@ let stevke baza numb =
 
 (** Začetek seznama *)
 
-let take _ _ = failwith __LOC__
+let reverse list = 
+   let rec reverse' acc = function
+   | [] -> acc
+   | h::t -> reverse' (h::acc) t
+in
+reverse' [] list
+
+let take n list =
+   let rec take' acc n list =
+      match n, list with
+      | _, [] -> reverse acc
+      | 0, _ -> reverse acc
+      | n, h::t -> take' (h::acc) (n - 1) t
+   in
+   take' [] n list
+
 (* let primer_1_4 = take 3 [ 1; 2; 3; 4; 5 ] *)
 (* let primer_1_5 = take 10 [ 1; 2; 3; 4; 5 ] *)
 
 (** Odstranjevanje ujemajočih *)
 
-let drop_while _ _ = failwith __LOC__
+let rec drop_while f = function
+| h::t when (f h) = true -> drop_while f t
+| list -> list
+
 (* let primer_1_6 = drop_while (fun x -> x < 5) [ 3; 1; 4; 1; 5; 9; 2; 6; 5; 3; 5 ] *)
 (* let primer_1_7 = drop_while (fun x -> x < 5) [ 9; 8; 7; 6; 5; 4; 3; 2; 1; 0 ] *)
 
