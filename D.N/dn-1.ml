@@ -50,7 +50,16 @@ let rec drop_while f = function
 
 (** Funkcija `filter_mapi` *)
 
-let filter_mapi _ _ = failwith __LOC__
+let filter_mapi f list = 
+   let rec filter_mapi' acc x f list = 
+      match list with
+      | [] -> acc
+      | h::t ->
+         match (f x h) with
+         | None -> filter_mapi' acc (x + 1) f t
+         | Some b -> filter_mapi' ((b)::acc) (x + 1) f t
+   in
+   filter_mapi' [] 0 f (reverse list)
 
 (* let primer_1_8 =
    filter_mapi
@@ -63,38 +72,77 @@ type ('a, 'b) sum = In1 of 'a | In2 of 'b
 
 (** $A \times B \cong B \times A$ *)
 
-let phi1 _ = failwith __LOC__
-let psi1 _ = failwith __LOC__
+let phi1 (a, b) = (b, a)
+
+let psi1 = phi1
 
 (** $A + B \cong B + A$ *)
 
-let phi2 _ = failwith __LOC__
-let psi2 _ = failwith __LOC__
+let phi2 = function
+   | In1 a -> In2 a
+   | In2 b -> In1 b
+
+let psi2 = phi2
 
 (** $A \times (B \times C) \cong (A \times B) \times C$ *)
 
-let phi3 _ = failwith __LOC__
-let psi3 _ = failwith __LOC__
+let phi3 (a, (b, c)) = ((a, b), c)
+
+let psi3 ((a, b), c) = (a, (b, c))
 
 (** $A + (B + C) \cong (A + B) + C$ *)
 
-let phi4 _ = failwith __LOC__
-let psi4 _ = failwith __LOC__
+let phi4 (x: ('a, ('b, 'c) sum) sum) =
+   match x with
+   | In1 a -> In1 (In1 a)
+   | In2 zmesni -> 
+      match zmesni with
+      | In1 b -> In1 (In2 b)
+      | In2 c -> In2 c
+
+let psi4 = function
+| In2 c -> In2 (In2 c)
+| In1 zmesni ->
+   match zmesni with
+   | In1 a -> In1 a
+   | In2 b -> In2 (In1 b)
 
 (** $A \times (B + C) \cong (A \times B) + (A \times C)$ *)
 
-let phi5 _ = failwith __LOC__
-let psi5 _ = failwith __LOC__
+let phi5 = function
+| a, In1 b -> In1 (a, b)
+| a, In2 c -> In2 (a, c)
+
+let psi5 = function
+| In1 (a, b) -> (a, In1 b)
+| In2 (a, c) -> (a, In2 c)
 
 (** $A^{B + C} \cong A^B \times A^C$ *)
 
-let phi6 _ = failwith __LOC__
-let psi6 _ = failwith __LOC__
+let phi6 (f: (('a, 'b) sum) -> 'c) = 
+   let f1 a = f (In1 a) in
+   let f2 b = f (In2 b) in
+   (f1, f2)
+
+let psi6 (f1, f2) =
+   let f = function
+   | In1 b -> f1 b
+   | In2 c -> f2 c
+in f
 
 (** $(A \times B)^C \cong A^C \times B^C$ *)
 
-let phi7 _ = failwith __LOC__
-let psi7 _ = failwith __LOC__
+let phi7 f =
+   let f1 c=
+      let (a, b) = f c in
+      a in
+   let f2 c=
+      let (a, b) = f c in
+      b in
+      (f1, f2)
+
+let psi7 (f1, f2) =
+   fun c -> (f1 c, f2 c)
 
 (* ## Polinomi *)
 
