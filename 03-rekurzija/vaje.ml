@@ -1,4 +1,4 @@
-(* ========== Vaja 2: Funkcijsko Programiranje  ========== *)
+  (* ========== Vaja 2: Funkcijsko Programiranje  ========== *)
 
 (*----------------------------------------------------------------------------*]
  Definirajte pomožno funkcijo za obračanje seznamov.
@@ -206,9 +206,13 @@ let rec fold_left_no_acc f = function
  - : int list = []
 [*----------------------------------------------------------------------------*)
 
-let rec apply_sequence f x = function
-| 0 -> x
-| n -> apply_sequence f (f x) (n - 1)
+let apply_sequence f x n=
+  let rec apply_sequence' acc f x = function
+  | 0 -> reverse (x::acc)
+  | n when n > 0 -> apply_sequence' ((f x)::acc) f (f x) (n - 1) 
+  | _ -> []
+in
+apply_sequence' [] f x n
 
 (*----------------------------------------------------------------------------*]
  Funkcija [filter f list] vrne seznam elementov [list], pri katerih funkcija [f]
@@ -239,7 +243,7 @@ filter' [] f list
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
-let exists list f =
+let exists f list =
   let rec exists' bol list f =
     match bol, list with
     | true, _ -> true
