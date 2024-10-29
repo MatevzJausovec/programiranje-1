@@ -219,6 +219,20 @@ let count_magic list =
 [*----------------------------------------------------------------------------*)
 
 let rec find_candidate magic specialisation wizard_list =
+  match wizard_list with
+  | [] -> None
+  | {ime ; status}::t ->
+    match status with
+    | Student (mag, leta) when mag = magic ->
+      begin match specialisation with
+      | History when leta > 2 -> Some ime
+      | Researcher when leta > 3 -> Some ime
+      | Teacher when leta > 4 -> Some ime
+      | _ -> find_candidate magic specialisation t
+    end
+    | _ -> find_candidate magic specialisation t
+
+(*let rec find_candidate magic specialisation wizard_list =
   let n =
     match specialisation with
     | History -> 3
@@ -230,7 +244,7 @@ let rec find_candidate magic specialisation wizard_list =
   | {ime ; status}::t ->
     match status with
     | Student (mag, leta) when mag = magic and leta >= n -> Some ime
-    | _ -> find_candidate magic specialisation t
+    | _ -> find_candidate magic specialisation t*)
 
 
 (* let primer_carovniki_3 =

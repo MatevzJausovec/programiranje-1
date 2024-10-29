@@ -1,5 +1,22 @@
 (* # 1. domača naloga *)
 
+(* Nekaj pomožnih funkcij za sezname *)
+
+let reverse list = 
+   let rec reverse' acc = function
+   | [] -> acc
+   | h::t -> reverse' (h::acc) t
+in
+reverse' [] list
+
+let len list =
+   let rec len' acc = function
+   | [] -> acc
+   | _::t -> len' (acc + 1) t
+in len' 0 list
+
+(* Konec pomožnih funkcij za sezname *)
+
 (* ## Ogrevanje *)
 
 (** Števke *)
@@ -19,13 +36,6 @@ let stevke baza numb =
 (* let primer_1_3 = stevke 16 ((3 * 16 * 16 * 16) + (14 * 16 * 16) + (15 * 16) + 9) *)
 
 (** Začetek seznama *)
-
-let reverse list = 
-   let rec reverse' acc = function
-   | [] -> acc
-   | h::t -> reverse' (h::acc) t
-in
-reverse' [] list
 
 let take n list =
    let rec take' acc n list =
@@ -150,29 +160,80 @@ type polinom = int list
 
 (** Odstranjevanje odvečnih ničel *)
 
-let pocisti _ = failwith __LOC__
+let pocisti (list: polinom): polinom =
+   let rec pocisti' = function
+   | [] -> []
+   | 0::t -> pocisti' t
+   | list -> list
+in
+reverse (pocisti' (reverse list))
+
 (* let primer_3_1 = pocisti [ 1; -2; 3; 0; 0 ] *)
 
 (** Seštevanje *)
 
-let ( +++ ) _ _ = failwith __LOC__
+let ( +++ ) (list1: polinom) (list2: polinom) =
+let rec aux acc list1 list2 =
+   match list1, list2 with
+   | [], [] -> acc
+   | [], h2::t2 -> aux (h2::acc) [] t2
+   | h1::t1, [] -> aux (h1::acc) t1 []
+   | h1::t1, h2::t2 -> aux ((h1 + h2)::acc) t1 t2
+in
+pocisti (reverse (aux [] list1 list2))
+
 (* let primer_3_2 = [ 1; -2; 3 ] +++ [ 1; 2 ] *)
 (* let primer_3_3 = [ 1; -2; 3 ] +++ [ 1; 2; -3 ] *)
 
 (** Množenje *)
 
-let ( *** ) _ _ = failwith __LOC__
+let ( *** ) (list1: polinom) (list2: polinom) =
+let n1 = (len list1) - 1 in
+let n2 = (len list2) -1 in
+let max_p = n1 + n2 in
+let rec nth_el n list =
+   match n, list with
+   | _, [] -> 0
+   | 0, h::t -> h
+   | i, h::t -> nth_el (i - 1) t
+in
+let rec aux2 acc i n list1 list2 =
+   match i with
+   | x when x = n + 1 -> acc
+   | x -> aux2 (((nth_el x list1) * (nth_el (n - x) list2)) + acc) (i + 1) n list1 list2
+in
+let rec aux1 i acc list1 list2 =
+   match i with
+   | n when n = max_p -> ((nth_el n1 list1) * (nth_el n2 list2))::acc
+   | 0 -> aux1 (i + 1) (((nth_el 0 list1) * (nth_el 0 list2))::acc) list1 list2
+   | n -> aux1 (i + 1) ((aux2 0 0 n list1 list2)::acc) list1 list2
+in 
+pocisti (reverse (aux1 0 [] list1 list2))
+
+
 (* let primer_3_4 = [ 1; 1 ] *** [ 1; 1 ] *** [ 1; 1 ] *)
 (* let primer_3_5 = [ 1; 1 ] *** [ 1; -1 ] *)
 
 (** Izračun vrednosti v točki *)
 
-let vrednost _ _ = failwith __LOC__
+let vrednost_polinoma (poli: polinom) x =
+   let rec vrednost' acc p x = function
+   | [] -> acc
+   | h::t -> vrednost' (h * (int_of_float ((float_of_int x) ** (float_of_int p))) + acc) (p + 1) x t
+in vrednost' 0 0 x poli
+
 (* let primer_3_6 = vrednost [ 1; -2; 3 ] 2 *)
 
 (** Odvajanje *)
 
-let odvod _ = failwith __LOC__
+let odvod_polinoma (poli: polinom) =
+   let rec odvod' i acc = function
+   | [] -> acc
+   | h::t -> odvod' (i + 1) ((i * h)::acc) t
+in match poli with
+| [] -> []
+| h::t -> pocisti (reverse (odvod' 1 [] t))
+
 (* let primer_3_7 = odvod [ 1; -2; 3 ] *)
 
 (** Lep izpis *)
