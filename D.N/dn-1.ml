@@ -15,6 +15,13 @@ let len list =
    | _::t -> len' (acc + 1) t
 in len' 0 list
 
+let mapi f list =
+  let rec mapi' acc i f = function
+  | [] -> acc
+  | h::t -> mapi' ((f h i)::acc) (i + 1) f t
+in
+reverse (mapi' [] 0 f list)
+
 (* Konec pomožnih funkcij za sezname *)
 
 (* ## Ogrevanje *)
