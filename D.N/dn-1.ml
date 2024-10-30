@@ -22,6 +22,13 @@ let mapi f list =
 in
 reverse (mapi' [] 0 f list)
 
+let zdruzi list1 list2 =
+   let rec zdruzi' list2 = function
+   | [] -> list2
+   | h::t -> zdruzi' (h::list2) t
+in zdruzi' list2 (reverse list1)
+
+
 (* Konec pomožnih funkcij za sezname *)
 
 (* ## Ogrevanje *)
@@ -245,7 +252,46 @@ in match poli with
 
 (** Lep izpis *)
 
-let izpis _ = failwith __LOC__
+let string_map (f: char -> string) str =
+   let l = String.length str in
+   let rec string_map' acc f str = function
+   | i when i = l -> acc
+   | i -> string_map' (acc ^ (f str.[i])) f str (i + 1)
+in
+string_map' "" f str 0
+
+let izpis (poli: polinom) =
+   let exp_list = ["⁰"; "¹"; "²"; "³"; "⁴"; "⁵"; "⁶"; "⁷"; "⁸"; "⁹"]
+in 
+let f a i =
+   match a, i with
+   | 0, _ -> ""
+   | b, 0 -> (string_of_int a) ^ " "
+   | b, 1 ->
+      begin match b with
+      | 1 -> "+ x "
+      | -1 -> "- x "
+      | a when a > 0 -> "+ " ^ (string_of_int a) ^ " x "
+      | a -> "- " ^ (string_of_int (-a)) ^ " x "
+   end
+   | b, i ->
+      begin match b with
+      | 1 -> "+ x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+      | -1 -> "- x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+      | a when a > 0 -> "+ " ^ (string_of_int  a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+      | a -> "- " ^ (string_of_int  (- a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i))) ^ " "
+   end
+in
+let rec together acc = function
+| [] -> acc
+| h::t -> together (acc ^ h) t
+in
+let end_str = together "" (reverse ( mapi f poli)) in
+if end_str = "" then end_str else
+   if (String.starts_with ~prefix:"+" end_str) 
+   then String.trim (String.sub end_str 2 ((String.length end_str) - 2))
+   else "-" ^ String.trim (String.sub end_str 2 ((String.length end_str) - 2))
+   
 (* let primer_3_8 = izpis [ 1; 2; 1 ] *)
 (* let primer_3_9 = izpis [ 1; 0; -1; 0; 1; 0; -1; 0; 1; 0; -1; 0; 1 ] *)
 (* let primer_3_10 = izpis [ 0; -3; 3; -1 ] *)
@@ -274,23 +320,29 @@ let ( ++. ) : odvedljiva -> odvedljiva -> odvedljiva =
 
 (** Vrednost odvoda *)
 
-let vrednost _ _ = failwith __LOC__
-let odvod _ _ = failwith __LOC__
+let vrednost (f, f') x = f x
+let odvod (f, f') x = f' x
 
 (** Osnovne funkcije *)
 
-let konstanta _ = failwith __LOC__
-let identiteta = ((fun _ -> failwith __LOC__), fun _ -> failwith __LOC__)
+let konstanta c: odvedljiva = ((fun x -> c), (fun x -> 0. ))
+let identiteta: odvedljiva = ((fun x -> x), (fun x -> 1.))
 
 (** Produkt in kvocient *)
 
-let ( **. ) _ _ = failwith __LOC__
-let ( //. ) _ _ = failwith __LOC__
+let ( **. ) ((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
+((fun x -> (f1 x) *. (f2 x)),(fun x -> ((f1' x) *. (f2 x)) +. ((f1 x) *. (f2' x))))
+
+let ( //. )  ((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
+((fun x -> (f1 x) /. (f2 x)) , (fun x -> (((f1' x) *. (f2 x)) -. ((f1 x) *. (f2' x))) /. ((f2 x) ** 2.)))
+
 (* let kvadrat = identiteta **. identiteta *)
 
 (** Kompozitum *)
 
-let ( @@. ) _ _ = failwith __LOC__
+let ( @@. )((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
+((fun x -> f1 (f2 x)), (fun x -> (f1' (f2 x)) *. (f2' x)))
+
 (* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
 (* let primer_4_1 = vrednost vedno_ena 12345. *)
 (* let primer_4_2 = odvod vedno_ena 12345. *)
@@ -304,14 +356,30 @@ let crka i = Char.chr (i + Char.code 'A')
 
 (** Šifriranje *)
 
-let sifriraj _ _ = failwith __LOC__
+let sifriraj sifra tekst =
+   let f sifra znak = 
+      match (indeks znak) with
+      | i when 0 <= i && i <= 25 -> sifra.[indeks znak]
+      | _ -> znak
+   in
+   String.map (f sifra) tekst
+
 (* let primer_5_1 = sifriraj quick_brown_fox "HELLO, WORLD!" *)
 (* let primer_5_2 = "VENI, VIDI, VICI" |> sifriraj rot13 *)
 (* let primer_5_3 = "VENI, VIDI, VICI" |> sifriraj rot13 |> sifriraj rot13 *)
 
 (** Inverzni ključ *)
 
-let inverz _ = failwith __LOC__
+let inverz sifra = 
+   let rec inverz' acc sifra = function
+   | i when i = String.length sifra -> acc
+   | i -> 
+      if String.contains sifra (crka i)
+      then inverz' (acc ^ (Char.escaped (crka (String.index sifra (crka i))))) sifra (i + 1)
+      else inverz' (acc ^ "_") sifra (i + 1)
+in
+inverz' "" sifra 0
+
 (* let primer_5_4 = inverz quick_brown_fox *)
 (* let primer_5_5 = inverz rot13 = rot13 *)
 (* let primer_5_6 = inverz "BCDEA" *)
@@ -400,7 +468,8 @@ let besede =
    dear enemy reply drink occur support speech nature range steam motion path \
    liquid log meant quotient teeth shell neck"
 
-let slovar = [ (* TODO *) ]
+let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
+
 (* let primer_5_7 = take 42 slovar *)
 (* let primer_5_8 = List.nth slovar 321 *)
 
@@ -409,7 +478,12 @@ let slovar = [ (* TODO *) ]
 (* Napišite funkcijo `dodaj_zamenjavo : string -> char * char -> string option`, ki sprejme ključ ter ga poskusi razširiti z zamenjavo dane črke. Funkcija naj vrne `None`, če razširitev vodi v ključ, ki ni bijektiven (torej če ima črka že dodeljeno drugo zamenjavo ali če smo isto zamenjavo dodelili dvema različnima črkama). *)
 
 (** Razširjanje ključa s črko *)
-let dodaj_zamenjavo _ _ = failwith __LOC__
+let dodaj_zamenjavo sifra (x, y) =
+   if indeks x < 0 || indeks x > 25 then None
+   else if indeks y < 0 || indeks y > 25 then None
+   else if String.contains sifra y then None
+   else if sifra.[indeks x] <> '_' then None
+   else Some ((String.sub sifra 0 (indeks x)) ^ (Char.escaped y) ^ (String.sub sifra (indeks x) ((String.length sifra) - indeks x)))
 
 (* let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X') *)
 (* let primer_5_10 = dodaj_zamenjavo "ABX_E" ('C', 'X') *)
@@ -419,7 +493,20 @@ let dodaj_zamenjavo _ _ = failwith __LOC__
 
 (* S pomočjo funkcije `dodaj_zamenjavo` sestavite še funkcijo `dodaj_zamenjave : string -> string * string -> string option`, ki ključ razširi z zamenjavami, ki prvo besedo preslikajo v drugo. *)
 
-let dodaj_zamenjave _ _ = failwith __LOC__
+let dodaj_zamenjave sifra (beseda1, beseda2) =
+   if String.length beseda1 <> String.length beseda2 then None else
+   let rec dodaj_zamenjave' sifra (beseda1, beseda2) = function
+   | i when i = String.length beseda1 -> Some sifra
+   | i -> 
+      if indeks beseda1.[i] < 0 || indeks beseda1.[i] > 25 then None else
+      match (dodaj_zamenjavo sifra (beseda1.[i], beseda2.[i])) with
+      | None -> if sifra.[indeks beseda1.[i]] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1) else None
+      | Some str -> dodaj_zamenjave' str (beseda1, beseda2) (i + 1)
+in
+dodaj_zamenjave' sifra (beseda1, beseda2) 0
+
+
+
 (* let primer_5_12 = dodaj_zamenjave "__________________________" ("HELLO", "KUNNJ") *)
 (* let primer_5_13 = dodaj_zamenjave "ABCDU_____________________" ("HELLO", "KUNNJ") *)
 (* let primer_5_14 = dodaj_zamenjave "ABCDE_____________________" ("HELLO", "KUNNJ") *)
@@ -428,7 +515,15 @@ let dodaj_zamenjave _ _ = failwith __LOC__
 
 (* Sestavite funkcijo `mozne_razsiritve : string -> string -> string list -> string list`, ki vzame ključ, šifrirano besedo ter slovar vseh možnih besed, vrne pa seznam vseh možnih razširitev ključa, ki šifrirano besedo slikajo v eno od besed v slovarju. *)
 
-let mozne_razsiritve _ _ _ = failwith __LOC__
+let mozne_razsiritve sifra beseda_sif slovar =
+   let rec mozne_razsiritve' acc sifra beseda_sif = function
+   | [] -> acc
+   | h::t -> 
+      match dodaj_zamenjave sifra (h, beseda_sif) with
+      | None -> mozne_razsiritve' acc sifra beseda_sif t
+      | Some str -> mozne_razsiritve' (str::acc) sifra beseda_sif t
+in
+mozne_razsiritve' [] sifra beseda_sif slovar
 
 (* let primer_5_15 =
    slovar
@@ -438,6 +533,32 @@ let mozne_razsiritve _ _ _ = failwith __LOC__
 (** Odšifriranje *)
 
 (* Napišite funkcijo `odsifriraj : string -> string option`, ki sprejme šifrirano besedilo in s pomočjo slovarja besed ugane odšifrirano besedilo. Funkcija naj vrne `None`, če ni mogoče najti nobenega ustreznega ključa. *)
-let odsifriraj _ = failwith __LOC__
+let remove_dupes seznam =
+   let rec remove_dupes' acc = function
+   | [] -> reverse acc
+   | h::t -> remove_dupes' (h::acc) (List.filter_map (fun a -> if a = h then None else Some a) t)
+in remove_dupes' [] seznam
+
+
+
+let odsifriraj besedilo_sif = 
+   let vse_besede = String.split_on_char ' ' besedilo_sif in
+
+   let mozne_razsiritve_sifer mozne_sifre beseda =
+      let rec mozne_razsiritve_sifer' acc beseda = function
+      | [] -> remove_dupes acc
+      | h::t -> mozne_razsiritve_sifer' (zdruzi (mozne_razsiritve h beseda slovar) acc) beseda t
+   in mozne_razsiritve_sifer' [] beseda mozne_sifre
+in
+   
+   let rec iterator mozne_sifre vse_besede = 
+      match vse_besede with
+      | [] -> mozne_sifre
+      | h::t -> iterator (mozne_razsiritve_sifer mozne_sifre h) t
+   in
+   let mozne_sifre = iterator [String.make 26 '_'] vse_besede
+in mozne_sifre
+
+
 (* let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM" *)
 (* let primer_5_17 = odsifriraj "VKBO BO T AUSD KTSQ MSJHNUF" *)
