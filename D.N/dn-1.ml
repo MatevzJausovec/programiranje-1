@@ -553,9 +553,8 @@ let mozne_razsiritve sifra beseda_sif slovar =
 
 (* Funkcija je napisana tako, da zahteva, da slovar mora vsebovati vse besede, ki so bile uporabljene. Če na primer poskusimo odšifrirati "TROLOBORIGOR",
    funkcija vrne None.
-   Funkcije 'odsifriraj_vse' vrne seznam vseh možnih verzij razšifriranega besedila. 'odsifriraj' le vrne prvi element tega seznama oz. None, če je seznam prazen.
+   Funkcije 'odsifriraj_vse' vrne seznam vseh možnih verzij razšifriranega besedila, nato 'odsifriraj' vrne prvi element tega seznama oz. None, če je seznam prazen.
    Funkcija 'mozne_razsiritve_sifer' je map funkcije 'mozne_razsiritve' na več šifer. *)
-
 
 let mozne_razsiritve_sifer mozne_sifre beseda =
    let rec mozne_razsiritve_sifer' acc beseda = function
