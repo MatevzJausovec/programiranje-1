@@ -4,29 +4,38 @@
 
 let reverse list = 
    let rec reverse' acc = function
-   | [] -> acc
-   | h::t -> reverse' (h::acc) t
-in
-reverse' [] list
+      | [] -> acc
+      | h::t -> reverse' (h::acc) t
+   in
+   reverse' [] list
 
 let len list =
    let rec len' acc = function
-   | [] -> acc
-   | _::t -> len' (acc + 1) t
-in len' 0 list
+      | [] -> acc
+      | _::t -> len' (acc + 1) t
+   in
+   len' 0 list
 
-let mapi f list =
+let list_mapi f list =
   let rec mapi' acc i f = function
-  | [] -> acc
-  | h::t -> mapi' ((f h i)::acc) (i + 1) f t
-in
-reverse (mapi' [] 0 f list)
+   | [] -> acc
+   | h::t -> mapi' ((f h i)::acc) (i + 1) f t
+   in
+   reverse (mapi' [] 0 f list)
+
+let list_map f list =
+   let rec map' acc  f = function
+      | [] -> acc
+      | h::t -> map' ((f h)::acc)  f t
+   in
+   reverse (map' [] f list)
 
 let zdruzi list1 list2 =
    let rec zdruzi' list2 = function
-   | [] -> list2
-   | h::t -> zdruzi' (h::list2) t
-in zdruzi' list2 (reverse list1)
+      | [] -> list2
+      | h::t -> zdruzi' (h::list2) t
+   in 
+   zdruzi' list2 (reverse list1)
 
 
 (* Konec pomožnih funkcij za sezname *)
@@ -43,7 +52,7 @@ let stevke baza numb =
       | _ -> stevke' ((numb - (baza * a))::acc) baza a
       end
    in
-  stevke' [] baza numb
+   stevke' [] baza numb
   
 (* let primer_1_1 = stevke 10 12345 *)
 (* let primer_1_2 = stevke 2 42 *)
@@ -66,8 +75,8 @@ let take n list =
 (** Odstranjevanje ujemajočih *)
 
 let rec drop_while f = function
-| h::t when (f h) = true -> drop_while f t
-| list -> list
+   | h::t when (f h) = true -> drop_while f t
+   | list -> list
 
 (* let primer_1_6 = drop_while (fun x -> x < 5) [ 3; 1; 4; 1; 5; 9; 2; 6; 5; 3; 5 ] *)
 (* let primer_1_7 = drop_while (fun x -> x < 5) [ 9; 8; 7; 6; 5; 4; 3; 2; 1; 0 ] *)
@@ -125,21 +134,21 @@ let phi4 (x: ('a, ('b, 'c) sum) sum) =
       | In2 c -> In2 c
 
 let psi4 = function
-| In2 c -> In2 (In2 c)
-| In1 zmesni ->
-   match zmesni with
-   | In1 a -> In1 a
-   | In2 b -> In2 (In1 b)
+   | In2 c -> In2 (In2 c)
+   | In1 zmesni ->
+      match zmesni with
+      | In1 a -> In1 a
+      | In2 b -> In2 (In1 b)
 
 (** $A \times (B + C) \cong (A \times B) + (A \times C)$ *)
 
 let phi5 = function
-| a, In1 b -> In1 (a, b)
-| a, In2 c -> In2 (a, c)
+   | a, In1 b -> In1 (a, b)
+   | a, In2 c -> In2 (a, c)
 
 let psi5 = function
-| In1 (a, b) -> (a, In1 b)
-| In2 (a, c) -> (a, In2 c)
+   | In1 (a, b) -> (a, In1 b)
+   | In2 (a, c) -> (a, In2 c)
 
 (** $A^{B + C} \cong A^B \times A^C$ *)
 
@@ -150,9 +159,9 @@ let phi6 (f: (('a, 'b) sum) -> 'c) =
 
 let psi6 (f1, f2) =
    let f = function
-   | In1 b -> f1 b
-   | In2 c -> f2 c
-in f
+      | In1 b -> f1 b
+      | In2 c -> f2 c
+   in f
 
 (** $(A \times B)^C \cong A^C \times B^C$ *)
 
@@ -163,7 +172,7 @@ let phi7 f =
    let f2 c=
       let (a, b) = f c in
       b in
-      (f1, f2)
+   (f1, f2)
 
 let psi7 (f1, f2) =
    fun c -> (f1 c, f2 c)
@@ -176,25 +185,25 @@ type polinom = int list
 
 let pocisti (list: polinom): polinom =
    let rec pocisti' = function
-   | [] -> []
-   | 0::t -> pocisti' t
-   | list -> list
-in
-reverse (pocisti' (reverse list))
+      | [] -> []
+      | 0::t -> pocisti' t
+      | list -> list
+   in
+   reverse (pocisti' (reverse list))
 
 (* let primer_3_1 = pocisti [ 1; -2; 3; 0; 0 ] *)
 
 (** Seštevanje *)
 
 let ( +++ ) (list1: polinom) (list2: polinom) =
-let rec aux acc list1 list2 =
-   match list1, list2 with
-   | [], [] -> acc
-   | [], h2::t2 -> aux (h2::acc) [] t2
-   | h1::t1, [] -> aux (h1::acc) t1 []
-   | h1::t1, h2::t2 -> aux ((h1 + h2)::acc) t1 t2
-in
-pocisti (reverse (aux [] list1 list2))
+   let rec aux acc list1 list2 =
+      match list1, list2 with
+      | [], [] -> acc
+      | [], h2::t2 -> aux (h2::acc) [] t2
+      | h1::t1, [] -> aux (h1::acc) t1 []
+      | h1::t1, h2::t2 -> aux ((h1 + h2)::acc) t1 t2
+   in
+   pocisti (reverse (aux [] list1 list2))
 
 (* let primer_3_2 = [ 1; -2; 3 ] +++ [ 1; 2 ] *)
 (* let primer_3_3 = [ 1; -2; 3 ] +++ [ 1; 2; -3 ] *)
@@ -202,27 +211,27 @@ pocisti (reverse (aux [] list1 list2))
 (** Množenje *)
 
 let ( *** ) (list1: polinom) (list2: polinom) =
-let n1 = (len list1) - 1 in
-let n2 = (len list2) -1 in
-let max_p = n1 + n2 in
-let rec nth_el n list =
+   let n1 = (len list1) - 1 in
+   let n2 = (len list2) -1 in
+   let max_p = n1 + n2 in
+   let rec nth_el n list =
    match n, list with
-   | _, [] -> 0
-   | 0, h::t -> h
-   | i, h::t -> nth_el (i - 1) t
-in
-let rec aux2 acc i n list1 list2 =
-   match i with
-   | x when x = n + 1 -> acc
-   | x -> aux2 (((nth_el x list1) * (nth_el (n - x) list2)) + acc) (i + 1) n list1 list2
-in
-let rec aux1 i acc list1 list2 =
-   match i with
-   | n when n = max_p -> ((nth_el n1 list1) * (nth_el n2 list2))::acc
-   | 0 -> aux1 (i + 1) (((nth_el 0 list1) * (nth_el 0 list2))::acc) list1 list2
-   | n -> aux1 (i + 1) ((aux2 0 0 n list1 list2)::acc) list1 list2
-in 
-pocisti (reverse (aux1 0 [] list1 list2))
+      | _, [] -> 0
+      | 0, h::t -> h
+      | i, h::t -> nth_el (i - 1) t
+   in
+   let rec aux2 acc i n list1 list2 =
+      match i with
+      | x when x = n + 1 -> acc
+      | x -> aux2 (((nth_el x list1) * (nth_el (n - x) list2)) + acc) (i + 1) n list1 list2
+   in
+   let rec aux1 i acc list1 list2 =
+      match i with
+      | n when n = max_p -> ((nth_el n1 list1) * (nth_el n2 list2))::acc
+      | 0 -> aux1 (i + 1) (((nth_el 0 list1) * (nth_el 0 list2))::acc) list1 list2
+      | n -> aux1 (i + 1) ((aux2 0 0 n list1 list2)::acc) list1 list2
+   in 
+   pocisti (reverse (aux1 0 [] list1 list2))
 
 
 (* let primer_3_4 = [ 1; 1 ] *** [ 1; 1 ] *** [ 1; 1 ] *)
@@ -230,11 +239,14 @@ pocisti (reverse (aux1 0 [] list1 list2))
 
 (** Izračun vrednosti v točki *)
 
+(* Funkciji 'vrednost' in 'odvod' sem preimenoval v 'vrednost_pilinoma' in 'odvod_polinoma',
+   ker sta imeni bili konflikni z funkcijama v poznejšem delu domače naloge.*)
+
 let vrednost_polinoma (poli: polinom) x =
    let rec vrednost' acc p x = function
-   | [] -> acc
-   | h::t -> vrednost' (h * (int_of_float ((float_of_int x) ** (float_of_int p))) + acc) (p + 1) x t
-in vrednost' 0 0 x poli
+      | [] -> acc
+      | h::t -> vrednost' (h * (int_of_float ((float_of_int x) ** (float_of_int p))) + acc) (p + 1) x t
+   in vrednost' 0 0 x poli
 
 (* let primer_3_6 = vrednost [ 1; -2; 3 ] 2 *)
 
@@ -242,11 +254,11 @@ in vrednost' 0 0 x poli
 
 let odvod_polinoma (poli: polinom) =
    let rec odvod' i acc = function
-   | [] -> acc
-   | h::t -> odvod' (i + 1) ((i * h)::acc) t
-in match poli with
-| [] -> []
-| h::t -> pocisti (reverse (odvod' 1 [] t))
+      | [] -> acc
+      | h::t -> odvod' (i + 1) ((i * h)::acc) t
+   in match poli with
+   | [] -> []
+   | h::t -> pocisti (reverse (odvod' 1 [] t))
 
 (* let primer_3_7 = odvod [ 1; -2; 3 ] *)
 
@@ -255,43 +267,47 @@ in match poli with
 let string_map (f: char -> string) str =
    let l = String.length str in
    let rec string_map' acc f str = function
-   | i when i = l -> acc
-   | i -> string_map' (acc ^ (f str.[i])) f str (i + 1)
-in
-string_map' "" f str 0
+      | i when i = l -> acc
+      | i -> string_map' (acc ^ (f str.[i])) f str (i + 1)
+   in
+   string_map' "" f str 0
 
 let izpis (poli: polinom) =
    let exp_list = ["⁰"; "¹"; "²"; "³"; "⁴"; "⁵"; "⁶"; "⁷"; "⁸"; "⁹"]
-in 
-let f a i =
-   match a, i with
-   | 0, _ -> ""
-   | b, 0 -> (string_of_int a) ^ " "
-   | b, 1 ->
-      begin match b with
-      | 1 -> "+ x "
-      | -1 -> "- x "
-      | a when a > 0 -> "+ " ^ (string_of_int a) ^ " x "
-      | a -> "- " ^ (string_of_int (-a)) ^ " x "
-   end
-   | b, i ->
-      begin match b with
-      | 1 -> "+ x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
-      | -1 -> "- x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
-      | a when a > 0 -> "+ " ^ (string_of_int  a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
-      | a -> "- " ^ (string_of_int  (- a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i))) ^ " "
-   end
-in
-let rec together acc = function
-| [] -> acc
-| h::t -> together (acc ^ h) t
-in
-let end_str = together "" (reverse ( mapi f poli)) in
-if end_str = "" then end_str else
-   if (String.starts_with ~prefix:"+" end_str) 
-   then String.trim (String.sub end_str 2 ((String.length end_str) - 2))
-   else "-" ^ String.trim (String.sub end_str 2 ((String.length end_str) - 2))
-   
+   in 
+   let f a i =
+      match a, i with
+      | 0, _ -> "" 
+      | b, 0 -> 
+         begin match b with
+         | a when a > 0 -> "+ " ^ (string_of_int a)
+         | a -> "- " ^ (string_of_int (-a))
+         end
+      | b, 1 ->
+         begin match b with
+         | 1 -> "+ x "
+         | -1 -> "- x "
+         | a when a > 0 -> "+ " ^ (string_of_int a) ^ " x "
+         | a -> "- " ^ (string_of_int (-a)) ^ " x "
+         end
+      | b, i ->
+         begin match b with
+         | 1 -> "+ x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+         | -1 -> "- x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+         | a when a > 0 -> "+ " ^ (string_of_int  a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i)) ^ " "
+         | a -> "- " ^ (string_of_int  (- a) ^ " x" ^ (string_map (fun (c: char) -> List.nth exp_list (int_of_string (Char.escaped c))) (string_of_int i))) ^ " "
+         end
+   in
+   let rec together acc = function
+      | [] -> acc
+      | h::t -> together (acc ^ h) t
+   in
+   let end_str = together "" (reverse ( list_mapi f poli)) in
+   if end_str = "" then end_str else
+      match end_str.[0] with
+      | '+' -> String.trim (String.sub end_str 2 ((String.length end_str) - 2))
+      | _ -> "-" ^ String.trim (String.sub end_str 2 ((String.length end_str) - 2))
+
 (* let primer_3_8 = izpis [ 1; 2; 1 ] *)
 (* let primer_3_9 = izpis [ 1; 0; -1; 0; 1; 0; -1; 0; 1; 0; -1; 0; 1 ] *)
 (* let primer_3_10 = izpis [ 0; -3; 3; -1 ] *)
@@ -331,17 +347,17 @@ let identiteta: odvedljiva = ((fun x -> x), (fun x -> 1.))
 (** Produkt in kvocient *)
 
 let ( **. ) ((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
-((fun x -> (f1 x) *. (f2 x)),(fun x -> ((f1' x) *. (f2 x)) +. ((f1 x) *. (f2' x))))
+   ((fun x -> (f1 x) *. (f2 x)),(fun x -> ((f1' x) *. (f2 x)) +. ((f1 x) *. (f2' x))))
 
 let ( //. )  ((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
-((fun x -> (f1 x) /. (f2 x)) , (fun x -> (((f1' x) *. (f2 x)) -. ((f1 x) *. (f2' x))) /. ((f2 x) ** 2.)))
+   ((fun x -> (f1 x) /. (f2 x)) , (fun x -> (((f1' x) *. (f2 x)) -. ((f1 x) *. (f2' x))) /. ((f2 x) ** 2.)))
 
 (* let kvadrat = identiteta **. identiteta *)
 
 (** Kompozitum *)
 
 let ( @@. )((f1, f1'): odvedljiva) ((f2, f2'): odvedljiva): odvedljiva =
-((fun x -> f1 (f2 x)), (fun x -> (f1' (f2 x)) *. (f2' x)))
+   ((fun x -> f1 (f2 x)), (fun x -> (f1' (f2 x)) *. (f2' x)))
 
 (* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
 (* let primer_4_1 = vrednost vedno_ena 12345. *)
@@ -372,13 +388,13 @@ let sifriraj sifra tekst =
 
 let inverz sifra = 
    let rec inverz' acc sifra = function
-   | i when i = String.length sifra -> acc
-   | i -> 
-      if String.contains sifra (crka i)
-      then inverz' (acc ^ (Char.escaped (crka (String.index sifra (crka i))))) sifra (i + 1)
-      else inverz' (acc ^ "_") sifra (i + 1)
-in
-inverz' "" sifra 0
+      | i when i = String.length sifra -> acc
+      | i -> 
+         if String.contains sifra (crka i)
+         then inverz' (acc ^ (Char.escaped (crka (String.index sifra (crka i))))) sifra (i + 1)
+         else inverz' (acc ^ "_") sifra (i + 1)
+   in
+   inverz' "" sifra 0
 
 (* let primer_5_4 = inverz quick_brown_fox *)
 (* let primer_5_5 = inverz rot13 = rot13 *)
@@ -478,12 +494,13 @@ let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 (* Napišite funkcijo `dodaj_zamenjavo : string -> char * char -> string option`, ki sprejme ključ ter ga poskusi razširiti z zamenjavo dane črke. Funkcija naj vrne `None`, če razširitev vodi v ključ, ki ni bijektiven (torej če ima črka že dodeljeno drugo zamenjavo ali če smo isto zamenjavo dodelili dvema različnima črkama). *)
 
 (** Razširjanje ključa s črko *)
+
 let dodaj_zamenjavo sifra (x, y) =
    if indeks x < 0 || indeks x > 25 then None
    else if indeks y < 0 || indeks y > 25 then None
    else if String.contains sifra y then None
    else if sifra.[indeks x] <> '_' then None
-   else Some ((String.sub sifra 0 (indeks x)) ^ (Char.escaped y) ^ (String.sub sifra (indeks x) ((String.length sifra) - indeks x)))
+   else Some ((String.sub sifra 0 (indeks x)) ^ (Char.escaped y) ^ (String.sub sifra ((indeks x) + 1) ((String.length sifra) - 1 - indeks x)))
 
 (* let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X') *)
 (* let primer_5_10 = dodaj_zamenjavo "ABX_E" ('C', 'X') *)
@@ -496,14 +513,14 @@ let dodaj_zamenjavo sifra (x, y) =
 let dodaj_zamenjave sifra (beseda1, beseda2) =
    if String.length beseda1 <> String.length beseda2 then None else
    let rec dodaj_zamenjave' sifra (beseda1, beseda2) = function
-   | i when i = String.length beseda1 -> Some sifra
-   | i -> 
-      if indeks beseda1.[i] < 0 || indeks beseda1.[i] > 25 then None else
-      match (dodaj_zamenjavo sifra (beseda1.[i], beseda2.[i])) with
-      | None -> if sifra.[indeks beseda1.[i]] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1) else None
-      | Some str -> dodaj_zamenjave' str (beseda1, beseda2) (i + 1)
-in
-dodaj_zamenjave' sifra (beseda1, beseda2) 0
+      | i when i = String.length beseda1 -> Some sifra
+      | i -> 
+         if indeks beseda1.[i] < 0 || indeks beseda1.[i] > 25 then None else
+         match (dodaj_zamenjavo sifra (beseda1.[i], beseda2.[i])) with
+         | None -> if sifra.[indeks beseda1.[i]] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1) else None
+         | Some str -> dodaj_zamenjave' str (beseda1, beseda2) (i + 1)
+   in
+   dodaj_zamenjave' sifra (beseda1, beseda2) 0
 
 
 
@@ -517,13 +534,13 @@ dodaj_zamenjave' sifra (beseda1, beseda2) 0
 
 let mozne_razsiritve sifra beseda_sif slovar =
    let rec mozne_razsiritve' acc sifra beseda_sif = function
-   | [] -> acc
-   | h::t -> 
-      match dodaj_zamenjave sifra (h, beseda_sif) with
-      | None -> mozne_razsiritve' acc sifra beseda_sif t
-      | Some str -> mozne_razsiritve' (str::acc) sifra beseda_sif t
-in
-mozne_razsiritve' [] sifra beseda_sif slovar
+      | [] -> acc
+      | h::t -> 
+         match dodaj_zamenjave sifra (h, beseda_sif) with
+         | None -> mozne_razsiritve' acc sifra beseda_sif t
+         | Some str -> mozne_razsiritve' (str::acc) sifra beseda_sif t
+   in
+   mozne_razsiritve' [] sifra beseda_sif slovar
 
 (* let primer_5_15 =
    slovar
@@ -533,32 +550,36 @@ mozne_razsiritve' [] sifra beseda_sif slovar
 (** Odšifriranje *)
 
 (* Napišite funkcijo `odsifriraj : string -> string option`, ki sprejme šifrirano besedilo in s pomočjo slovarja besed ugane odšifrirano besedilo. Funkcija naj vrne `None`, če ni mogoče najti nobenega ustreznega ključa. *)
-let remove_dupes seznam =
-   let rec remove_dupes' acc = function
-   | [] -> reverse acc
-   | h::t -> remove_dupes' (h::acc) (List.filter_map (fun a -> if a = h then None else Some a) t)
-in remove_dupes' [] seznam
+
+(* Funkcija je napisana tako, da zahteva, da slovar mora vsebovati vse besede, ki so bile uporabljene. Če na primer poskusimo odšifrirati "TROLOBORIGOR",
+   funkcija vrne None.
+   Funkcije 'odsifriraj_vse' vrne seznam vseh možnih verzij razšifriranega besedila. 'odsifriraj' le vrne prvi element tega seznama oz. None, če je seznam prazen.
+   Funkcija 'mozne_razsiritve_sifer' je map funkcije 'mozne_razsiritve' na več šifer. *)
 
 
-
-let odsifriraj besedilo_sif = 
-   let vse_besede = String.split_on_char ' ' besedilo_sif in
-
-   let mozne_razsiritve_sifer mozne_sifre beseda =
-      let rec mozne_razsiritve_sifer' acc beseda = function
-      | [] -> remove_dupes acc
+let mozne_razsiritve_sifer mozne_sifre beseda =
+   let rec mozne_razsiritve_sifer' acc beseda = function
+      | [] -> acc
       | h::t -> mozne_razsiritve_sifer' (zdruzi (mozne_razsiritve h beseda slovar) acc) beseda t
-   in mozne_razsiritve_sifer' [] beseda mozne_sifre
-in
-   
+   in
+   mozne_razsiritve_sifer' [] beseda mozne_sifre
+
+let odsifriraj_vse besedilo_sif = 
+   let vse_besede = String.split_on_char ' ' besedilo_sif 
+   in
    let rec iterator mozne_sifre vse_besede = 
       match vse_besede with
       | [] -> mozne_sifre
       | h::t -> iterator (mozne_razsiritve_sifer mozne_sifre h) t
    in
    let mozne_sifre = iterator [String.make 26 '_'] vse_besede
-in mozne_sifre
+   in let mozne_razsiritve = list_map ((fun besedilo sifra -> sifriraj (inverz sifra) besedilo) besedilo_sif) mozne_sifre
+   in mozne_razsiritve
 
+let odsifriraj besedilo_sif =
+   match odsifriraj_vse besedilo_sif with
+   | [] -> None
+   | h::t -> Some h
 
 (* let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM" *)
 (* let primer_5_17 = odsifriraj "VKBO BO T AUSD KTSQ MSJHNUF" *)
