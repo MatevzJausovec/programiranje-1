@@ -526,7 +526,7 @@ let dodaj_zamenjavo sifra (x, y) =
 let rec dodaj_zamenjave sifra (beseda1, beseda2) =
    if String.length beseda1 <> String.length beseda2 
    then
-      if (String.length beseda2) - (String.length beseda1) = 1
+      if (String.length beseda2) - (String.length beseda1) > 0
          then 
             if (indeks beseda2.[(String.length beseda2) - 1] < 0 || indeks beseda2.[(String.length beseda2) - 1] > 25)
                then dodaj_zamenjave sifra (beseda1, String.sub beseda2 0 ((String.length beseda2) - 1))
