@@ -220,18 +220,18 @@ let ( *** ) (list1: polinom) (list2: polinom) =
       | 0, h::t -> h
       | i, h::t -> nth_el (i - 1) t
    in
-   let rec aux2 acc i n list1 list2 =
+   let rec sum2 acc i n list1 list2 =
       match i with
       | x when x = n + 1 -> acc
-      | x -> aux2 (((nth_el x list1) * (nth_el (n - x) list2)) + acc) (i + 1) n list1 list2
+      | x -> sum2 (((nth_el x list1) * (nth_el (n - x) list2)) + acc) (i + 1) n list1 list2
    in
-   let rec aux1 i acc list1 list2 =
+   let rec sum1 i acc list1 list2 =
       match i with
       | n when n = max_p -> ((nth_el n1 list1) * (nth_el n2 list2))::acc
-      | 0 -> aux1 (i + 1) (((nth_el 0 list1) * (nth_el 0 list2))::acc) list1 list2
-      | n -> aux1 (i + 1) ((aux2 0 0 n list1 list2)::acc) list1 list2
+      | 0 -> sum1 (i + 1) (((nth_el 0 list1) * (nth_el 0 list2))::acc) list1 list2
+      | n -> sum1 (i + 1) ((sum2 0 0 n list1 list2)::acc) list1 list2
    in 
-   pocisti (reverse (aux1 0 [] list1 list2))
+   pocisti (reverse (sum1 0 [] list1 list2))
 
 
 (* let primer_3_4 = [ 1; 1 ] *** [ 1; 1 ] *** [ 1; 1 ] *)
@@ -302,7 +302,8 @@ let izpis (poli: polinom) =
       | [] -> acc
       | h::t -> together (acc ^ h) t
    in
-   let end_str = together "" (reverse ( list_mapi f poli)) in
+   let end_str = together "" (reverse ( list_mapi f poli))
+   in
    if end_str = "" then end_str else
       match end_str.[0] with
       | '+' -> String.trim (String.sub end_str 2 ((String.length end_str) - 2))
@@ -496,10 +497,10 @@ let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 (** Razširjanje ključa s črko *)
 
 let dodaj_zamenjavo sifra (x, y) =
-   if indeks x < 0 || indeks x > 25 then None
-   else if indeks y < 0 || indeks y > 25 then None
-   else if String.contains sifra y then None
-   else if sifra.[indeks x] <> '_' then None
+   if indeks x < 0 || indeks x > 25 ||
+      indeks y < 0 || indeks y > 25 ||
+      String.contains sifra y ||
+      sifra.[indeks x] <> '_' then None
    else Some ((String.sub sifra 0 (indeks x)) ^ (Char.escaped y) ^ (String.sub sifra ((indeks x) + 1) ((String.length sifra) - 1 - indeks x)))
 
 (* let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X') *)
@@ -510,15 +511,28 @@ let dodaj_zamenjavo sifra (x, y) =
 
 (* S pomočjo funkcije `dodaj_zamenjavo` sestavite še funkcijo `dodaj_zamenjave : string -> string * string -> string option`, ki ključ razširi z zamenjavami, ki prvo besedo preslikajo v drugo. *)
 
-let dodaj_zamenjave sifra (beseda1, beseda2) =
-   if String.length beseda1 <> String.length beseda2 then None else
+(* Prvo preveri, če se besedi morda ne ujemata zaradi končnega ločila na beseda2, saj ta prihaja iz besedila*)
+
+let rec dodaj_zamenjave sifra (beseda1, beseda2) =
+   if String.length beseda1 <> String.length beseda2 
+   then
+      if (String.length beseda2) - (String.length beseda1) = 1
+         then 
+            if (indeks beseda2.[(String.length beseda2) - 1] < 0 || indeks beseda2.[(String.length beseda2) - 1] > 25)
+               then dodaj_zamenjave sifra (beseda1, String.sub beseda2 0 ((String.length beseda2) - 1))
+               else None
+         else None 
+   else
    let rec dodaj_zamenjave' sifra (beseda1, beseda2) = function
       | i when i = String.length beseda1 -> Some sifra
       | i -> 
-         if indeks beseda1.[i] < 0 || indeks beseda1.[i] > 25 then None else
-         match (dodaj_zamenjavo sifra (beseda1.[i], beseda2.[i])) with
-         | None -> if sifra.[indeks beseda1.[i]] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1) else None
-         | Some str -> dodaj_zamenjave' str (beseda1, beseda2) (i + 1)
+         if not (indeks beseda1.[i] < 0 || indeks beseda1.[i] > 25) then
+            match (dodaj_zamenjavo sifra (beseda1.[i], beseda2.[i])) with
+            | None -> if sifra.[indeks beseda1.[i]] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1) else None
+            | Some str -> dodaj_zamenjave' str (beseda1, beseda2) (i + 1)
+         else
+            if beseda1.[i] = beseda2.[i] then dodaj_zamenjave' sifra (beseda1, beseda2) (i + 1)
+            else None
    in
    dodaj_zamenjave' sifra (beseda1, beseda2) 0
 
