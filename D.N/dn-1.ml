@@ -1,6 +1,7 @@
 (* # 1. domača naloga *)
 
-(* Nekaj pomožnih funkcij za sezname *)
+(* Nekaj pomožnih funkcij za sezname 
+   Uporabljene v raznih delih naloge. *)
 
 let reverse list = 
    let rec reverse' acc = function
@@ -36,7 +37,6 @@ let zdruzi list1 list2 =
       | h::t -> zdruzi' (h::list2) t
    in 
    zdruzi' list2 (reverse list1)
-
 
 (* Konec pomožnih funkcij za sezname *)
 
@@ -210,12 +210,14 @@ let ( +++ ) (list1: polinom) (list2: polinom) =
 
 (** Množenje *)
 
+(* Produk je zapisan po definiciji v obliki dvojne sume. *)
+
 let ( *** ) (list1: polinom) (list2: polinom) =
    let n1 = (len list1) - 1 in
    let n2 = (len list2) -1 in
    let max_p = n1 + n2 in
    let rec nth_el n list =
-   match n, list with
+      match n, list with
       | _, [] -> 0
       | 0, h::t -> h
       | i, h::t -> nth_el (i - 1) t
@@ -233,14 +235,13 @@ let ( *** ) (list1: polinom) (list2: polinom) =
    in 
    pocisti (reverse (sum1 0 [] list1 list2))
 
-
 (* let primer_3_4 = [ 1; 1 ] *** [ 1; 1 ] *** [ 1; 1 ] *)
 (* let primer_3_5 = [ 1; 1 ] *** [ 1; -1 ] *)
 
 (** Izračun vrednosti v točki *)
 
 (* Funkciji 'vrednost' in 'odvod' sem preimenoval v 'vrednost_pilinoma' in 'odvod_polinoma',
-   ker sta imeni bili konflikni z funkcijama v poznejšem delu domače naloge.*)
+   ker sta imeni bili konfliktni z funkcijama v poznejšem delu domače naloge.*)
 
 let vrednost_polinoma (poli: polinom) x =
    let rec vrednost' acc p x = function
@@ -263,6 +264,8 @@ let odvod_polinoma (poli: polinom) =
 (* let primer_3_7 = odvod [ 1; -2; 3 ] *)
 
 (** Lep izpis *)
+
+(* String.map ne deluje, ker superscupt številke niso tipa char *)
 
 let string_map (f: char -> string) str =
    let l = String.length str in
@@ -485,7 +488,11 @@ let besede =
    dear enemy reply drink occur support speech nature range steam motion path \
    liquid log meant quotient teeth shell neck"
 
-let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
+(* Vse kar je med dvema presledkoma je geslo v slovarju. "." je beseda, saj je v slovarju. "%^^&" ni beseda, ker "%^^&" ni v slovarju. 
+   Glede na trenuten slovar prepoznamo "STOP .", ne pa "STOP !" 
+   Da bomo prepoznali poljubne znake izven A-Z, dodamo prazno besedo. *)
+
+let slovar = ""::(String.split_on_char ' ' (String.uppercase_ascii besede))
 
 (* let primer_5_7 = take 42 slovar *)
 (* let primer_5_8 = List.nth slovar 321 *)
@@ -511,7 +518,10 @@ let dodaj_zamenjavo sifra (x, y) =
 
 (* S pomočjo funkcije `dodaj_zamenjavo` sestavite še funkcijo `dodaj_zamenjave : string -> string * string -> string option`, ki ključ razširi z zamenjavami, ki prvo besedo preslikajo v drugo. *)
 
-(* Prvo preveri, če se besedi morda ne ujemata zaradi končnega ločila na beseda2, saj ta prihaja iz besedila*)
+(* Pri odšifriranju se bo zašifrirano besedlio razdelilo po ' '.
+   Prvo preveri, če se besedi morda ne ujemata zaradi končnega ločila na beseda2, saj ta prihaja iz besedila.
+   Znak izven A-Z na koncu besede torej ignorira, če je ta beseda prišla iz besedila.
+   Beseda "YU!!" v besedilu se na priemr ujema z gesli "YU", "yu!" ali "yu!!", če bi se ta nahajala v slovarju.*)
 
 let rec dodaj_zamenjave sifra (beseda1, beseda2) =
    if String.length beseda1 <> String.length beseda2 
@@ -535,8 +545,6 @@ let rec dodaj_zamenjave sifra (beseda1, beseda2) =
             else None
    in
    dodaj_zamenjave' sifra (beseda1, beseda2) 0
-
-
 
 (* let primer_5_12 = dodaj_zamenjave "__________________________" ("HELLO", "KUNNJ") *)
 (* let primer_5_13 = dodaj_zamenjave "ABCDU_____________________" ("HELLO", "KUNNJ") *)
@@ -567,8 +575,10 @@ let mozne_razsiritve sifra beseda_sif slovar =
 
 (* Funkcija je napisana tako, da zahteva, da slovar mora vsebovati vse besede, ki so bile uporabljene. Če na primer poskusimo odšifrirati "TROLOBORIGOR",
    funkcija vrne None.
+   Funkcija ne prepozna znakov izven A-Z, ki se držijo začetka besede.
+   Geslo v slovarju "ab" se na primer ujema z "vm,", ne pa z " vm".
    Funkcije 'odsifriraj_vse' vrne seznam vseh možnih verzij razšifriranega besedila, nato 'odsifriraj' vrne prvi element tega seznama oz. None, če je seznam prazen.
-   Funkcija 'mozne_razsiritve_sifer' je map funkcije 'mozne_razsiritve' na več šifer. *)
+   Funkcija 'mozne_razsiritve_sifer' je map funkcije 'mozne_razsiritve' na seznam šifer. *)
 
 let mozne_razsiritve_sifer mozne_sifre beseda =
    let rec mozne_razsiritve_sifer' acc beseda = function
