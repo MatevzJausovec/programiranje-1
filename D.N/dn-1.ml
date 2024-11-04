@@ -490,7 +490,7 @@ let besede =
 
 (* Vse kar je med dvema presledkoma je geslo v slovarju. "." je beseda, saj je v slovarju. "%^^&" ni beseda, ker "%^^&" ni v slovarju. 
    Glede na trenuten slovar prepoznamo "STOP .", ne pa "STOP !" 
-   Da bomo prepoznali poljubne znake izven A-Z, dodamo prazno besedo. *)
+   Da bomo prepoznali tudi poljubne izolirane znake izven A-Z, dodam še prazno besedo "". *)
 
 let slovar = ""::(String.split_on_char ' ' (String.uppercase_ascii besede))
 
@@ -524,14 +524,13 @@ let dodaj_zamenjavo sifra (x, y) =
    Beseda "YU!!" v besedilu se na priemr ujema z gesli "YU", "yu!" ali "yu!!", če bi se ta nahajala v slovarju.*)
 
 let rec dodaj_zamenjave sifra (beseda1, beseda2) =
-   if String.length beseda1 <> String.length beseda2 
-   then
-      if (String.length beseda2) - (String.length beseda1) > 0
-         then 
-            if (indeks beseda2.[(String.length beseda2) - 1] < 0 || indeks beseda2.[(String.length beseda2) - 1] > 25)
-               then dodaj_zamenjave sifra (beseda1, String.sub beseda2 0 ((String.length beseda2) - 1))
-               else None
-         else None 
+   if String.length beseda1 <> String.length beseda2 then
+   if (String.length beseda2) - (String.length beseda1) > 0
+      then 
+         if (indeks beseda2.[(String.length beseda2) - 1] < 0 || indeks beseda2.[(String.length beseda2) - 1] > 25)
+            then dodaj_zamenjave sifra (beseda1, String.sub beseda2 0 ((String.length beseda2) - 1))
+            else None
+      else None 
    else
    let rec dodaj_zamenjave' sifra (beseda1, beseda2) = function
       | i when i = String.length beseda1 -> Some sifra
