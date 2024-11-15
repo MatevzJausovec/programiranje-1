@@ -17,12 +17,14 @@
 
 module type NAT = sig
   type t
-
   val eq  : t -> t -> bool
   val zero : t
-  (* Dodajte manjkajoče! *)
-  (* val to_int : t -> int *)
-  (* val of_int : int -> t *)
+  val unit : t
+  val ( + ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val to_int : t -> int
+  val of_int : int -> t
 end
 
 (*----------------------------------------------------------------------------*
@@ -36,10 +38,20 @@ end
 module Nat_int : NAT = struct
 
   type t = int
-  let eq x y = failwith "later"
+  let eq x y = (x = y)
   let zero = 0
-  (* Dodajte manjkajoče! *)
-
+  let unit = 1
+  let ( + ) n m = n + m
+  let ( * ) n m = n * m
+  let ( - ) n m = 
+    match (n - m) with
+    | k when k > 0 -> k
+    | _ -> 0
+  let to_int (n: t): int = n
+  let of_int  (n: int) =
+  match n with
+    | k when k > 0 -> k
+    | _ -> 0
 end
 
 (*----------------------------------------------------------------------------*
@@ -53,10 +65,47 @@ end
 
 module Nat_peano : NAT = struct
 
-  type t = unit (* To morate spremeniti! *)
+  type t = 
+  | Nil
+  | Komp of unit * t
   let eq x y = failwith "later"
-  let zero = () (* To morate spremeniti! *)
+  let zero = Nil (* To morate spremeniti! *)
   (* Dodajte manjkajoče! *)
+
+  let eq x y = (x = y)
+  let unit = Komp ((), Nil)
+
+  let to_int (k: t): int = 
+    let rec to_int' (n: int) = function
+      | Nil -> n
+      | Komp ((), t) -> to_int' (n + 1) t
+    in
+    to_int' 0 k
+
+  let of_int n =
+    let rec of_int' acc = function
+      | n when n <= 0 -> acc
+      | n -> of_int' (Komp ((), acc)) (n - 1)
+    in
+    of_int' Nil n
+
+  let rec ( + ) n = function
+    | Nil -> n
+    | Komp((), m) -> ( + ) (Komp((), n)) m
+
+  let ( * ) n m = 
+    let rec aux acc n = function
+      | Nil -> acc
+      | Komp((), m) -> aux (acc + n) n m
+    in
+    aux Nil n m
+
+  let rec ( - ) n = function
+    | Nil -> n
+    | Komp((), m) ->
+      match n with
+      | Nil -> Nil
+      | Komp((), n) -> ( - ) n m
 
 end
 
@@ -79,8 +128,12 @@ end
 let sum_nat_100 = 
   (* let module Nat = Nat_int in *)
   let module Nat = Nat_peano in
-  Nat.zero (* to popravite na ustrezen izračun *)
-  (* |> Nat.to_int *)
+  let rec sum acc a b =
+    match a with
+    | x when Nat.eq a b -> acc
+    | x -> sum (Nat.(acc + x)) Nat.(x + Nat.unit) b
+  in sum Nat.zero Nat.unit (Nat.of_int 101)
+  |> Nat.to_int
 (* val sum_nat_100 : int = 5050 *)
 
 (*----------------------------------------------------------------------------*
@@ -135,7 +188,15 @@ let sum_nat_100 =
 module type COMPLEX = sig
   type t
   val eq : t -> t -> bool
-  (* Dodajte manjkajoče! *)
+  val zero : t
+  val unit : t
+  val i : t
+  val to_pair : t -> float * float
+  val of_pair : float * float -> t
+  val neg : t -> t
+  val kon : t -> t
+  val ( + ) : t -> t -> t
+  val ( * ) : t -> t -> t
 end
 
 (*----------------------------------------------------------------------------*
@@ -146,9 +207,17 @@ end
 module Cartesian : COMPLEX = struct
 
   type t = {re : float; im : float}
+  let eq {re = re1; im = im1} {re = re2; im = im2} = (re1 = re2) && (im1 = im2)
 
-  let eq x y = failwith "later"
-  (* Dodajte manjkajoče! *)
+  let zero = {re= 0.; im= 0.}
+  let unit = {re= 1.; im= 0.}
+  let i = {re= 0.; im= 1.}
+  let to_pair {re; im} = (re, im)
+  let of_pair (re, im) = {re; im}
+  let neg {re; im} = {re = -1. *. re; im = -1. *. im}
+  let kon {re; im} = {re; im = -1. *. im}
+  let ( + ) {re = re1; im = im1} {re = re2; im = im2} = {re = re1 +. re2; im = im1 +. im2}
+  let ( * ){re = re1; im = im1} {re = re2; im = im2} = {re = re1 *. re2 -. im1 *. im2; im = re1 *. im2 +. re2 *. im1}
 
 end
 
@@ -168,7 +237,45 @@ module Polar : COMPLEX = struct
   let rad_of_deg deg = (deg /. 180.) *. pi
   let deg_of_rad rad = (rad /. pi) *. 180.
 
-  let eq x y = failwith "later"
-  (* Dodajte manjkajoče! *)
+  let zero = {magn = 0.; arg = 0.}
+  let correct {magn; arg} =
+    match magn, arg with
+    | r, _ when r <= 0. -> zero
+    | r, fi -> 
+      let rec under_2pi = function
+        | fi when fi < 0. -> under_2pi (fi +. 2. *. pi)
+        | fi when fi >= 2. *. pi -> under_2pi (fi +. 2. -. pi)
+        | fi -> fi
+      in
+      {magn = magn; arg = under_2pi fi}
+
+  let eq c1 c2 = 
+    let eq' {magn = magn1; arg = arg1} {magn = magn2; arg = arg2} = (magn1 = magn2) && (arg1 = arg2)
+    in eq' (correct c1) (correct c2)
+   
+  let unit = {magn = 1.; arg = 0.}
+  let i = {magn = 1.; arg = pi/.2.}
+  let to_pair {magn; arg}  = (magn, arg)
+  let of_pair (magn, arg) = correct {magn; arg}
+  let neg {magn; arg} = correct {magn; arg = pi +. arg}
+  let kon {magn; arg} = correct {magn; arg = -1. *. arg}
+
+  let ( * ) {magn = magn1; arg = arg1} {magn = magn2; arg = arg2} = correct {magn = magn1 *. magn2; arg = arg1 +. arg2}
+  
+  let cart_to_pol (a, b) =
+    let fi = 
+      match a, b with
+      | 0., y when y < 0. -> 1.5 *. pi
+      | 0., y -> 0.5 *. pi
+      | x, y when x > 0. -> atan (b/.a)
+      | x, y -> pi +. atan (b/.a)
+    in
+    correct {magn = sqrt(a *. a +. b *. b); arg = fi}
+  let pol_to_cart {magn; arg} = (magn *. cos arg, magn *. sin arg)
+
+  let ( + ) c1 c2 = 
+    let a1, b1 = pol_to_cart c1 in
+    let a2, b2 = pol_to_cart c2 in
+    cart_to_pol (a1 +. a2, b1 +. b2)
 
 end
