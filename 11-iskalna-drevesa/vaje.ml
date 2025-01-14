@@ -19,7 +19,10 @@ type 'a drevo =
        /   / \
       0   6   11
 [*----------------------------------------------------------------------------*)
-let test = Node (Node (Node (Empty, 0, Empty), 2, Empty), 5, Node (Node (Empty, 6, Empty), 7, Node (Empty, 11, Empty)))
+
+let leaf a = Node (Empty, a, Empty)
+
+let test_tree = Node (Node (Node (Empty, 0, Empty), 2, Empty), 5, Node (Node (Empty, 6, Empty), 7, Node (Empty, 11, Empty)))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mirror] vrne prezrcaljeno drevo. Na primeru [test_tree] torej vrne
@@ -94,17 +97,50 @@ let rec list_of_tree tree =
 (* obe poddrevesi sta bst; max leva < node < min desna, vrnem drvao, max, min
      ALI
      daš v list -> sort list *)
-let  is_bst tree =
-     if tree = Empty then true else
-     let rec is_bst' max min flag tree = 
-          if not flag then (maks, mini, flag) else
+let is_bst tree =
+     let rec is_bst2 tree (*  tree je neprazen *) = 
           match tree with
-          | Empty -> failwith "Kako?"
-          | Node (Empty, a, Empty) -> (a, a, true)
-          | Node (tl, a, td) -> 
-               if a < maks && a > mini
-          
+          | Empty -> failwith "Nonempty tree is empty"
+          | Node (tl, a, tr) ->
+               match tl, tr with
+               | Empty, Empty -> (a, true, a)
+               | xl, Empty ->
+                    let min_l, bool_l, max_l = is_bst2 xl in
+                    if not bool_l then (a, false, a) else
+                    if max_l < a then (min_l, true, a) else (a, false, a)
+               | Empty, xr -> 
+                    let min_r, bool_r, max_r = is_bst2 xr in
+                    if not bool_r then (a, false, a) else
+                    if a < min_r then (a, true, max_r) else (a, false, a)
+               | xl, xr ->
+                    let min_l, bool_l, max_l = is_bst2 xl in
+                    let min_r, bool_r, max_r = is_bst2 xr in
+                    if not (bool_l && bool_r) then (a, false, a) else
+                    if max_l < a && a < min_r then (min_l, true, max_r) else (a, false, a)
+          in
+     match tree with
+     | Empty -> true
+     | x -> let _, ans, _ = is_bst2 x in ans
 
+     (* let rec is_bst' (tree) = 
+          match tree with
+          | Empty -> (true, None)
+          | Node (tl, a, tr) ->
+               let bool_l, ekstremi_l = is_bst' tl in
+               let bool_r, ekstremi_r = is_bst' tr in
+               if not (bool_l && bool_r) then (false, None) else
+                    match ekstremi_l, ekstremi_r with
+                    | None, None -> (true, Some (a, a))
+                    | None, Some (maks_r, mini_r) -> 
+                         if not (mini_r > a) then (false, None) else (true, Some (maks_r, a))
+                    | Some (maks_l, mini_l), None -> 
+                         if not (maks_l < a) then (false, None) else (true, Some (a, mini_l))
+                    | Some (maks_l, mini_l), Some (maks_r, mini_r) -> 
+                         if not (maks_l < a && mini_r > a) then (false, None) else (true, Some (maks_r, mini_l)) 
+     in
+     let ans, _ = is_bst' tree in ans*)
+
+          
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  V nadaljevanju predpostavljamo, da imajo dvojiška drevesa strukturo BST.
@@ -121,6 +157,21 @@ let  is_bst tree =
 [*----------------------------------------------------------------------------*)
 (* Lahko deformiraš*)
 
+let rec member x tree =
+     match tree with
+     | Empty -> false
+     | Node (tl, a, tr) ->
+          if a = x then true
+          else if a < x then member x tr
+          else member x tl
+
+let rec insert x tree =
+     if member x tree then tree else
+     match tree with 
+     | Empty -> Node (Empty, x, Empty)
+     | Node (tl, a, tr) ->
+          if x < a then Node (insert x tl, a, tr) else Node (tl, a, insert x tr)
+
 (*----------------------------------------------------------------------------*]
  Funkcija [member2] ne privzame, da je drevo bst.
  
@@ -128,6 +179,9 @@ let  is_bst tree =
  funkcije [member2] na drevesu z n vozlišči, ki ima globino log(n). 
 [*----------------------------------------------------------------------------*)
 
+(* member = O(globina drevesa), member2 = O(n) *)
+let member2 x tree =
+     List.exists ((=) x) (list_of_tree tree)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [succ] vrne naslednjika korena danega drevesa, če obstaja. Za drevo
@@ -141,7 +195,17 @@ let  is_bst tree =
  # pred (Node(Empty, 5, leaf 7));;
  - : int option = None
 [*----------------------------------------------------------------------------*)
+let succ tree =
+     match tree with
+     | Empty -> None
+     | Node (tl, a, tr) -> 
+          let rec aux a tree =
+               match tree with
+               | Empty -> a
+               | Node (tl', a', _) -> aux (Some a') tl'
+          in aux None tr
 
+let pred tree = succ (mirror tree)
 
 (*----------------------------------------------------------------------------*]
  Na predavanjih ste omenili dva načina brisanja elementov iz drevesa. Prvi 
@@ -155,6 +219,23 @@ let  is_bst tree =
  Node (Node (Node (Empty, 0, Empty), 2, Empty), 5,
  Node (Node (Empty, 6, Empty), 11, Empty))
 [*----------------------------------------------------------------------------*)
+let rec delete x tree =
+     if not (member x tree) then tree else
+     let aux tree =
+          match tree with
+          | Empty -> Empty
+          | Node (tl, a, tr) ->
+               let rec aux2 tl tr =
+                    match tr with
+                    | Empty -> tl
+                    | Node (tree, a, tree') -> Node (aux2 tl tree, a, tree')
+               in aux2 tl tr
+     in
+     match tree with
+     | Empty -> Empty
+     | Node (tl, a, tr) -> 
+          if x = a then aux tree
+               else  Node (delete x tl, a, delete x tr)
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -167,7 +248,7 @@ let  is_bst tree =
  strukturo glede na ključe. Ker slovar potrebuje parameter za tip ključa in tip
  vrednosti, ga parametriziramo kot [('key, 'value) dict].
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
-
+type ('key, 'value) dict = ('key * 'value) drevo
 
 (*----------------------------------------------------------------------------*]
  Napišite testni primer [test_dict]:
@@ -177,7 +258,7 @@ let  is_bst tree =
          /
      "c":-2
 [*----------------------------------------------------------------------------*)
-
+let test_dict : (string, int) dict = Node (leaf ("a", 0), ("b", 1), Node (leaf ("c", -2), ("d", 2), Empty))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [dict_get key dict] v slovarju poišče vrednost z ključem [key]. Ker
@@ -188,7 +269,16 @@ let  is_bst tree =
  # dict_get "c" test_dict;;
  - : int option = Some (-2)
 [*----------------------------------------------------------------------------*)
+let member_key key (dict : ('a, 'b) dict) = member key (map_tree (fun ((a,b)) -> a) dict)
 
+let dict_get key (dict : ('a, 'b) dict) =
+     if not (member_key key dict) then None else
+          let rec dict_get' key = function
+               | Empty -> None
+               | Node (tl, (klj, vr), tr) -> 
+                    if klj = key then Some vr else if klj > key then dict_get' key tl else dict_get' key tr
+          in
+          dict_get' key dict
       
 (*----------------------------------------------------------------------------*]
  Funkcija [print_dict] sprejme slovar s ključi tipa [string] in vrednostmi tipa
@@ -205,8 +295,13 @@ let  is_bst tree =
  d : 2
  - : unit = ()
 [*----------------------------------------------------------------------------*)
-
-
+let print_dict (dict : (string, int) dict) = 
+     let sez = list_of_tree dict in
+     let rec printer = function
+     | [] -> ()
+     | (s, n)::t -> print_string (s^" : "); print_int n; print_newline (); printer t
+     in
+     printer sez
 (*----------------------------------------------------------------------------*]
  Funkcija [dict_insert key value dict] v slovar [dict] pod ključ [key] vstavi
  vrednost [value]. Če za nek ključ vrednost že obstaja, jo zamenja.
@@ -226,6 +321,18 @@ let  is_bst tree =
  - : unit = ()
 [*----------------------------------------------------------------------------*)
 
+let dict_insert (key : 'a) (value : 'b) (dict : ('a, 'b) dict)=
+     match dict_get key dict with
+     | None -> insert (key, value) dict
+     | Some b -> delete (key, b) dict |> insert (key, value)
+          (* let rec aux key value = function
+               | Empty -> failwith "Skill isue"
+               | Node (tl, (klj, vr), tr) -> 
+                    if klj = key then Node (tl, (klj, value), tr) else if klj < key then Node (aux key value tl, (klj, vr), tr) else Node (tl, (klj,  vr), aux key value tr)
+          in
+          aux key value dict *)
+          
+
 (*----------------------------------------------------------------------------*]
  Napišite primerno signaturo za slovarje [DICT] in naredite implementacijo
  modula z drevesi. 
@@ -234,6 +341,21 @@ let  is_bst tree =
  [print] (print naj ponovno deluje zgolj na [(string, int) t].
 [*----------------------------------------------------------------------------*)
 
+module type DICT = sig
+  type ('key,'value) t
+  val empty : ('key,'value) t
+  val get : 'key -> ('key,'value) t -> 'value option
+  val insert : 'key -> 'value -> ('key,'value) t -> ('key,'value) t
+  val print : (string, int) t -> unit
+end
+
+module Dict : DICT = struct
+  type ('key,'value) t = ('key,'value) dict
+  let empty = Empty
+  let get key slovar = dict_get key slovar
+  let insert key value slovar = dict_insert key value slovar
+  let print slovar = print_dict slovar
+end
 
 (*----------------------------------------------------------------------------*]
  Funkcija [count (module Dict) list] prešteje in izpiše pojavitve posameznih
@@ -244,4 +366,115 @@ let  is_bst tree =
  b : 1
  n : 2
  - : unit = ()
+[*----------------------------------------------------------------------------*)
+
+let count (module D : DICT) sez = 
+     let rec count' dict = function
+          | [] -> dict
+          | h::t ->
+               match D.get h dict with
+               | None -> count' (D.insert h 1 dict) t
+               | Some n ->  count' (D.insert h (n + 1) dict) t
+     in
+     count' D.empty sez |> D.print 
+
+(*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
+ DODATNE VAJE 
+[*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [bst_of_list] iz seznama naredi dvojiško iskalno drevo.
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # [11; 6; 7; 0; 2; 5] |> bst_of_list |> is_bst;;
+ - : bool = true
+[*----------------------------------------------------------------------------*)
+
+let bst_of_list sez =
+     let rec bst_of_list' tree = function
+          | [] -> tree
+          | h::t -> bst_of_list' (insert h tree) t
+     in
+     bst_of_list' Empty sez
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [tree_sort] uredi seznam s pomočjo pretvorbe v bst in nato nazaj
+ v seznam.
+
+ Opomba: Prosim ne uporabljajte te funkcije v praksi.
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # tree_sort ["a"; "c"; "f"; "b"; "e"; "d"];;
+ - : string list = ["a"; "b"; "c"; "d"; "e"; "f"]
+[*----------------------------------------------------------------------------*)
+let tree_sort sez = sez |> bst_of_list |> list_of_tree
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [follow directions tree] tipa [direction list -> 'a tree -> 'a option]
+ sprejme seznam navodil za premikanje po drevesu in vrne vozlišče do katerega 
+ vodi podana pot. Ker navodila morda ne vodijo do nobenega vozlišča v drevesu
+ vrne rezultat kot [option] tip. Ne pozabite definirati tipa [directions].
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # follow [Right; Left] test_tree;;
+ - : int option = Some 6
+ # follow [Right; Left; Right; Right] test_tree;;
+ - : int option = None
+[*----------------------------------------------------------------------------*)
+
+type direction = Left | Right
+
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [prune directions tree] poišče vozlišče v drevesu glede na navodila,
+ ter izbriše poddrevo, ki se začne v izbranem vozlišču.
+
+ Opozorilo: Pri uporabi [Some Node(l, x, r)] se OCaml pritoži, saj to razume 
+ kot [(Some Node)(l, x, r)], zato pravilno postavite potrebne oklepaje.
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # prune [Right] test_tree;;
+ - : int tree option =
+ Some (Node (Node (Node (Empty, 0, Empty), 2, Empty), 5, Empty))
+[*----------------------------------------------------------------------------*)
+
+
+(*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
+ PHANTOM TREES
+
+ Druga možnost pri brisanju podatkov je, da spremenimo tip s katerim
+ predstavljamo drevo. Definirate nov tip fantomskega drevesa, ki poleg podatka,
+ levega in desnega poddrevesa hrani še dodatno informacijo o stanju [state], ki
+ je bodisi [Exists] če je vozlišče še prisotno in pa [Ghost] če je vozlišče v
+ drevesu izbrisano in ga upoštevamo le še kot delitveno vozlišče. Še vedno
+ predpostavljamo, da imajo drevesa obliko BST.
+[*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
+
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [phantomize] tipa ['a tree -> 'a phantom_tree] navadnemu drevesu
+ priredi ekvivalentno fantomsko drevo.
+ Funkcija [kill x ptree] izbriše element [x] v fantomskem drevesu tako, da 
+ njegovo stanje nastavi na [Ghost].
+ Predpostavite lahko, da v drevesu ni ponovitev elementov.
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # phantomize test_tree;;
+ - : int phantom_tree =
+ P_Node (P_Node (P_Node (P_Empty, 0, P_Empty, Exists), 2, P_Empty, Exists), 5,
+ P_Node (P_Node (P_Empty, 6, P_Empty, Exists), 7,
+ P_Node (P_Empty, 11, P_Empty, Exists), Exists),
+ Exists)
+
+ # bst_of_list [3; 4; 2] |> phantomize |> kill 3 |> kill 6;;
+ - : int phantom_tree =
+ P_Node (P_Empty, 2,
+ P_Node (P_Node (P_Empty, 3, P_Empty, Ghost), 4, P_Empty, Exists), Exists)
+[*----------------------------------------------------------------------------*)
+
+
+(*----------------------------------------------------------------------------*]
+ Funkcija [unphantomize] tipa ['a phantom_tree -> 'a tree] fantomskemu drevesu 
+ priredi navadno drevo, ki vsebuje zgolj vozlišča, ki še obstajajo. Vrstni red
+ vozlišč v končnem drevesu ni pomemben.
+
+ Namig: Lahko uporabite vmesni prehodom na drugo podatkovno strukturo.
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ # test_tree |> phantomize |> kill 7 |> kill 0 |> kill 5 |> unphantomize;;
+ - : int tree = Node (Node (Node (Empty, 2, Empty), 6, Empty), 11, Empty)
 [*----------------------------------------------------------------------------*)
