@@ -132,7 +132,7 @@ module type MACHINE = sig
   val step : t -> state -> Tape.t -> (state * Tape.t) option
 end
 
-module Machine : MACHINE = struct
+module Machine  = struct
   type 'a bbs_tree = (* Balanced binary search tree *)
   | Empty
   | Node of 'a bbs_tree * 'a * 'a bbs_tree
@@ -142,20 +142,6 @@ module Machine : MACHINE = struct
   type t = states_dict * state * (states_dict -> char -> state -> (char * state * direction) option)
   
   (* Pomožne funkcije *)
-  let insert x sez =
-    (* Insert v urejen seznam, naraščujoče*)
-    let rec merge sez = function
-      | [] -> sez
-      | h::t -> merge (h::sez) t
-    in
-    let rec insert' x stari = function
-      | [] -> merge [x] stari
-      | h::t -> 
-        if x < h 
-          then merge (x::sez) stari
-          else insert' x (h::stari) t
-    in
-  insert' x [] sez
 
   let rec bbst_creator states =
     (* Zahteva že urejen seznam *)
@@ -191,6 +177,7 @@ module Machine : MACHINE = struct
       | _ -> failwith "Comparison in change_value failed"
   
   (* Glavne funkcije *)
+
   let make state_0 all_states = 
     if List.mem state_0 all_states then failwith "Initial state name is duplicated" else
     if let rec duplicate_finder = function
@@ -199,7 +186,7 @@ module Machine : MACHINE = struct
       in not (duplicate_finder all_states) then failwith "Duplicate state name found" else
     let sorted = List.sort compare (state_0::all_states) |> List.map (fun x -> (x, Empty)) in
     let states_tree = bbst_creator sorted  in
-    (* Iskanje funkcije po drevesih je definirano v funkcije. Dodajanje prehoda bo torej spreminjalo drevo stanj.*)
+    (* Iskanje funkcije po drevesih je definirano v funkcije. Dodajanje prehoda bo spreminjalo drevo stanj.*)
     let f (states_tree : states_dict) (x : char) (current_state : state) : ((char * state * direction) option) =
       let rec f_sub (x : char) (tree : (char * (char * state * direction)) bbs_tree) =
         match tree with
@@ -227,12 +214,13 @@ module Machine : MACHINE = struct
 
   let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_tree, state_0, f) : t): t = 
     (* Ta funkcija je implementirana skoraj po navodilih. Namesto da so preslikave del prehodne funkcije so le te vrednosti v slovarju stanj, 
-    ki so tudi sami slovarju. Prehodna funkcija le vrača te vrednosti oz. None, če stanje za določeno vrednost nima definirano preslikavo. *)
+    ki so tudi sami slovarju. Prehodna funkcija le vrača te vrednosti oz. None, če stanje za določeno vrednost nima definirano preslikavo,
+    torej se prehodna funkcija z dodajanjem preslikav ne spreminja. Spreminja se slovar slovarjev stanj. *)
     let states_tree' =
       let aux_sub (tree : (char * (char * state * direction)) bbs_tree) ch1 q2 ch2 d =
         let sez = bbst_to_list tree in
         if List.mem ch1 (List.map (fun (x, _) -> x ) sez) then change_value ch1 (ch2, q2, d) tree
-        else sez |> insert (ch1, (ch2, q2, d)) |> bbst_creator
+        else (ch1, (ch2, q2, d))::sez |> List.sort compare |> bbst_creator
       in 
       let rec aux_main tree q1 ch1 q2 ch2 d =
         match tree with
@@ -244,11 +232,11 @@ module Machine : MACHINE = struct
           | key when key > k -> Node (l, (k, v), aux_main r q1 ch1 q2 ch2 d)
           | _ -> failwith "Comparison in aux_main failed"
         in aux_main states_tree q1 ch1 q2 ch2 d
-    (* Muzejski artefakt
-    in let f' ch q=
+    (* Muzejski artefakt *)
+    (* in let f' states_tree ch q=
       match ch, q with
       | ch, q when ch = ch1 && q = q1 -> Some (ch2, q2, d)
-      | ch, q -> f ch q *)
+      | ch, q -> f states_tree ch q *)
     in (states_tree', state_0, f)
     
   let step ((states_tree, state_0, f) : t) (q : state) (tape : Tape.t) = 
@@ -270,8 +258,9 @@ let binary_increment =
     |> add_transition "right" '0' "right" '0' Right
     |> add_transition "right" ' ' "carry" ' ' Left
     |> add_transition "carry" '1' "carry" '0' Left
-    |> add_transition "carry" '0' "done" '1' Left
     |> add_transition "carry" ' ' "done" '1' Left
+    |> add_transition "carry" '0' "done" '1' Left
+
   )
 
 (* val binary_increment : Machine.t = <abstr> *)
@@ -293,8 +282,8 @@ let slow_run makina (input : string) =
     | Some (state', tape') -> runner makina state' tape'
   in runner makina (Machine.initial makina) tape
 
-let primer_slow_run =
-  slow_run binary_increment "1011"
+(* let primer_slow_run =
+  slow_run binary_increment "1011" *)
 (*
 1011
 ^
@@ -363,6 +352,8 @@ let primer_speed_run =
  Implementacijo in tipe ugotovite sami.
 [*----------------------------------------------------------------------------*)
 
+(* PROBLEM *)
+
 let for_state state transition_lists_list makina =
   let transition_list = List.concat transition_lists_list in
   let rec transition_adder state transition_list makina =
@@ -394,7 +385,7 @@ let binary_increment' =
     for_character ' ' @@ switch_and_move "carry" Left
   ]
   |> for_state "carry" [
-    for_character '1' @@ switch_and_move "carry" Left;
+    for_character '1' @@ write_switch_and_move '0' "carry" Left;
     for_characters "0 " @@ write_switch_and_move '1' "done" Left
   ]   
 (* val binary_increment' : Machine.t = <abstr> *)
@@ -420,15 +411,83 @@ let binary_increment' =
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
 
-let reverse = ()
+let reverse = 
+  Machine.make "check_length" ["length"; "first"; "start"; "check0"; "gap0"; "paste0"; "check1"; "gap1"; "paste1";
+                               "return"; "final0"; "final_paste0"; "final1"; "final_paste1"; "end"; "done"]
+  |> for_state "check_length" [
+    for_characters "01" @@ switch_and_move "length" Right;
+    for_character ' ' @@ move Right
+  ]
+  |> for_state "length" [
+    for_characters "01" @@ switch_and_move "first" Left;
+    for_character ' ' @@ switch_and_move "donr" Left
+  ]
+  |> for_state "first" [
+    for_character ' ' @@ move Right;
+    for_character '1' @@ write_switch_and_move ' ' "paste1" Left;
+    for_character '0' @@ write_switch_and_move ' ' "paste0" Left
+  ]
 
+  |> for_state "start" [
+    for_character ' ' @@ move Right;
+    for_character '1' @@ write_switch_and_move ' ' "check1" Right;
+    for_character '0' @@ write_switch_and_move ' ' "check0" Right
+  ]
+  |> for_state "check0" [
+    for_characters "01" @@ switch_and_move "gap0" Left;
+    for_character ' ' @@ switch_and_move "final0" Left
+  ]
+  |> for_state "gap0" [
+    for_characters "01" @@ switch_and_move "paste0" Left;
+    for_character ' ' @@ move Left
+  ]
+  |> for_state "paste0" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '0' "return" Right
+  ]
+  |> for_state "check1" [
+    for_characters "01" @@ switch_and_move "gap1" Left;
+    for_character ' ' @@ switch_and_move "final1" Left
+  ]
+  |> for_state "gap1" [
+    for_characters "01" @@ switch_and_move "paste1" Left;
+    for_character ' ' @@ move Left
+  ]
+  |> for_state "paste1" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '1' "return" Right
+  ]
+  |> for_state "return" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "start" Right
+  ]
+
+  |> for_state "final0" [
+    for_characters "01" @@ switch_and_move "final_paste0" Left;
+    for_character ' ' @@ move Left
+  ]
+  |> for_state "final_paste0" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '0' "end" Right
+  ]
+  |> for_state "final1" [
+    for_characters "01" @@ switch_and_move "final_paste1" Left;
+    for_character ' ' @@ move Left
+  ]
+  |> for_state "final_paste1" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '1' "end" Right
+  ]
+  |> for_state "end" [
+    for_characters "01" @@ switch_and_move "done" Left;
+  ]
 let primer_reverse = speed_run reverse "0000111001"
 (* 
 1001110000          
 ^
 *)
 (* val primer_reverse : unit = () *)
-(*
+
 (*----------------------------------------------------------------------------*
  ### Podvajanje niza
 [*----------------------------------------------------------------------------*)
@@ -454,7 +513,7 @@ let primer_duplicate = speed_run duplicate "010011"
  Sestavite Turingov stroj, ki na začetku na traku sprejme število $n$, zapisano
  v dvojiškem zapisu, na koncu pa naj bo na traku zapisanih natanko $n$ enic.
 [*----------------------------------------------------------------------------*)
-
+(*
 let to_unary = ()
 
 let primer_to_unary = speed_run to_unary "1010"
