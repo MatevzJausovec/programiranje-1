@@ -224,7 +224,7 @@ module Machine  = struct
       in 
       let rec aux_main tree q1 ch1 q2 ch2 d =
         match tree with
-        | Empty -> failwith "Key not found; aux_main"
+        | Empty -> failwith ("Key " ^ q1 ^ " not found; aux_main")
         | Node (l, (k, v), r) ->
           match q1 with
           | key when key = k -> Node (l, (k, aux_sub v ch1 q2 ch2 d), r)
@@ -496,7 +496,68 @@ let primer_reverse = speed_run reverse "0000111001"
  Sestavite Turingov stroj, ki podvoji začetni niz.
 [*----------------------------------------------------------------------------*)
 
-let duplicate = ()
+let duplicate =
+  Machine.make "start" ["pusher"; "push0"; "push1"; "gap0"; "paste0a"; "paste0b"; "gap1"; "paste1a";
+                        "paste1b"; "to_push"; "push_gap"; "back"; "end"; "finish"; "done"]
+  |> for_state "start" [
+    for_character ' ' @@ move Right;
+    for_character '1' @@ switch_and_move "gap1" Left;
+    for_character '0' @@ switch_and_move "gap0" Left
+  ]
+  |> for_state "pusher" [
+    for_character ' ' @@ switch_and_move "end" Left;
+    for_character '1' @@ write_switch_and_move ' ' "push1" Right;
+    for_character '0' @@ write_switch_and_move ' ' "push0" Right
+  ]
+  |> for_state "push1" [
+    for_character ' ' @@ write_switch_and_move '1' "back" Left;
+    for_character '1' @@ move Right;
+    for_character '0' @@ write_switch_and_move '1' "push0" Right
+  ]
+  |> for_state "push0" [
+    for_character ' ' @@ write_switch_and_move '0' "back" Left;
+    for_character '0' @@ move Right;
+    for_character '1' @@ write_switch_and_move '0' "push1" Right
+  ]
+
+  |> for_state "gap0" [
+    for_character ' ' @@ switch_and_move "paste0a" Left
+  ]
+  |> for_state "paste0a" [
+    for_character ' ' @@ write_switch_and_move '0' "paste0b" Left
+  ]
+  |> for_state "paste0b" [
+    for_character ' ' @@ write_switch_and_move '0' "to_push" Right
+  ]
+  |> for_state "gap1" [
+    for_character ' ' @@ switch_and_move "paste1a" Left
+  ]
+  |> for_state "paste1a" [
+    for_character ' ' @@ write_switch_and_move '1' "paste1b" Left
+  ]
+  |> for_state "paste1b" [
+    for_character ' ' @@ write_switch_and_move '1' "to_push" Right
+  ]
+
+  |> for_state "to_push" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "push_gap" Right
+  ]
+  |> for_state "push_gap" [
+    for_characters "01" @@ write_switch_and_move ' ' "pusher" Right
+  ]
+  |> for_state "back" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "start" Right
+  ]
+  |> for_state "end" [
+    for_characters "01" @@ switch_and_move "finish" Left;
+    for_character ' ' @@ move Left
+  ]
+  |> for_state "finish" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "done" Right
+  ]
 
 let primer_duplicate = speed_run duplicate "010011"
 (* 
@@ -513,8 +574,34 @@ let primer_duplicate = speed_run duplicate "010011"
  Sestavite Turingov stroj, ki na začetku na traku sprejme število $n$, zapisano
  v dvojiškem zapisu, na koncu pa naj bo na traku zapisanih natanko $n$ enic.
 [*----------------------------------------------------------------------------*)
-(*
-let to_unary = ()
+
+let to_unary = 
+  Machine.make "start" ["minus"; "backfill"; "add"; "return"; "finish"; "done"]
+  |> for_state "start" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "minus" Left
+  ]
+  |> for_state "minus" [
+    for_character ' ' @@ switch_and_move "finish" Right;
+    for_character '0' @@ move Left;
+    for_character '1' @@ write_switch_and_move '0' "backfill" Right
+  ]
+  |> for_state "backfill" [
+    for_character '0' @@ write_switch_and_move '1' "backfill" Right;
+    for_character ' ' @@ switch_and_move "add" Right
+  ]
+  |> for_state "add" [
+    for_character ' ' @@ write_switch_and_move '1' "return" Left;
+    for_character '1' @@ move Right
+  ]
+  |> for_state "return" [
+    for_character ' ' @@ switch_and_move "minus" Left;
+    for_character '1' @@ move Left
+  ]
+  |> for_state "finish" [
+    for_character ' ' @@ switch_and_move "done" Right;
+    for_character '0' @@ write_and_move ' ' Right
+  ]
 
 let primer_to_unary = speed_run to_unary "1010"
 (* 
@@ -533,11 +620,47 @@ let primer_to_unary = speed_run to_unary "1010"
  dvojiškem zapisu.
 [*----------------------------------------------------------------------------*)
 
-let to_binary = ()
+let to_binary = 
+  Machine.make "start" ["seed"; "gap"; "right"; "minus"; "add"; "carry"; "return"; "finish"; "done"]
+  |> for_state "start" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "seed" Left
+  ]
+  |> for_state "seed" [
+    for_character ' ' @@ write_switch_and_move '0' "gap" Right
+  ]
+  |> for_state "gap" [
+    for_character ' ' @@ switch_and_move "right" Right
+  ]
+  |> for_state "right" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "minus" Left
+  ]
+  |> for_state "minus" [
+    for_character ' ' @@ switch_and_move "finish" Left;
+    for_character '1' @@ write_switch_and_move ' ' "add" Left
+  ]
+  |> for_state "add" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "carry" Left
+  ]
+  |> for_state "carry" [
+    for_characters "0 " @@ write_switch_and_move '1' "return" Right;
+    for_character '1' @@ write_and_move '0' Left
+  ]
+  |> for_state "return" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "right" Right
+  ]
+  |> for_state "finish" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "done" Right
+  ]
+
 
 let primer_to_binary = speed_run to_binary (String.make 42 '1')
 (* 
 101010                                           
 ^
 *)
-(* val primer_to_binary : unit = () *) *)
+(* val primer_to_binary : unit = () *) 
