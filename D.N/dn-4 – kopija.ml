@@ -133,6 +133,25 @@ module type MACHINE = sig
 end
 
 module Machine : MACHINE = struct
+  module Dict = struct
+    type t = state * char
+    let compare (a : t) (b : t) = compare a b
+  end
+  module Preslikave = Map.Make(Dict)
+  type preslikave = (char * state * direction) Preslikave.t
+  type t = (state list) * state * preslikave
+
+  let make state_0 other_states : t = ((state_0::other_states), state_0, Preslikave.empty)
+  let initial ((_, state_0, _) : t) = state_0
+  let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_dict, state_0, f) : t): t =
+    (states_dict, state_0, f |> Preslikave.add (q1, ch1) (ch2, q2, d))
+  let step ((states_dict, state_0, f) : t) (q : state) (tape : Tape.t) =
+    match  Preslikave.find_opt (q, (Tape.read tape)) f with
+    | None -> None
+    | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
+end
+(*
+module Machine3 : MACHINE = struct
   module CharKey = struct
     type t = char
     let compare (ch1 : t) (ch2 : t) = compare ch1 ch2
@@ -284,7 +303,7 @@ module Machine2 : MACHINE = struct
       | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
     
 end
-
+*)
 (*----------------------------------------------------------------------------*
  Primer stroja "Binary Increment" na <http://turingmachine.io> lahko
  implementiramo kot:
