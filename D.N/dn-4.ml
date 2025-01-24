@@ -141,148 +141,30 @@ module Machine : MACHINE = struct
     type t = state
     let compare (s1 : t) (s2 :t) =  compare s1 s2
   end
-  module States = Map.Make(StringKey)
-  module Preslikave = Map.Make(CharKey)
-  type preslikave = ((char * state * direction)) Preslikave.t
-  type dict = preslikave States.t
-  type t = dict * state * (dict -> char -> state -> (char * state * direction) option)
+  module CharDict = Map.Make(CharKey)
+  module StringDict = Map.Make(StringKey)
+  type preslikave = ((char * state * direction) CharDict.t) StringDict.t
+  type t = (state list) * state * preslikave
 
-  let make state_0 other_states : t = 
-    let rec dict_maker (sez : state list) (slov :dict) =
-      match sez with
-      | [] -> slov
-      | h::t -> dict_maker t (States.add h Preslikave.empty slov)
-    in let all_states = dict_maker (state_0::other_states) States.empty
-    in 
-    let f (state_dict : dict) ch1 q1 = 
-      state_dict |> States.find q1 |> Preslikave.find_opt ch1
-    in (all_states, state_0, f)
-  let initial ((_, state_0, _) : t) = state_0
-  let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_dict, state_0, f) : t): t = 
-    let rec aux ch1 = function
-      | None -> failwith" Transitiion was added at non-existant state"
-      | Some preslikava -> Some (Preslikave.add ch1 (ch2, q2, d) preslikava)
+  let make state_0 other_states : t =
+    let rec dict_maker dict = function
+      | [] -> dict
+      | h::t -> dict_maker (StringDict.add h CharDict.empty dict) t
     in
-    let new_states = states_dict |> States.update q1 (aux ch1)
-    in (new_states, state_0, f)
-  let step ((states_tree, state_0, f) : t) (q : state) (tape : Tape.t) = 
-    match f states_tree (Tape.read tape) q with
+    ((state_0::other_states), state_0, dict_maker StringDict.empty (state_0::other_states))
+
+    let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_dict, state_0, f) : t): t =
+      let update key value = function
+        | None -> failwith "State for transition not found"
+        | Some preslikava -> Some (CharDict.add key value preslikava)
+    in (states_dict, state_0, f |> StringDict.update q1 (update ch1 (ch2, q2, d)))
+
+    let initial ((_, state_0, _) : t) = state_0
+
+    let step ((states_dict, state_0, f) : t) (q : state) (tape : Tape.t) =
+      match CharDict.find_opt (Tape.read tape) (StringDict.find q f) with
       | None -> None
-      | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
-end
-
-module Machine2 : MACHINE = struct
-  type 'a bbs_tree = (* Balanced binary search tree *)
-  | Empty
-  | Node of 'a bbs_tree * 'a * 'a bbs_tree
-  (* Množica stanj je implementirana kot bbs drevo parov. Pri element je ime stanja, drugi elemet je iskalno drevo definiranih preslikav v tem stanju.
-  Z drugimi besedami lahko opišemo kot slovar slovarjev. *)
-  type states_dict = (state * ((char * (char * state * direction)) bbs_tree)) bbs_tree
-  type t = states_dict * state * (states_dict -> char -> state -> (char * state * direction) option)
-  
-  (* Pomožne funkcije *)
-
-  let rec bbst_creator states =
-    (* Zahteva že urejen seznam *)
-    let n = (List.length states) / 2 in
-    let rec split_list_n acc_n n (acc, a, sez) =
-      match acc_n with
-      | x when x = n -> (acc, a, sez)
-      | x when x > n -> failwith "Index skipped over n"
-      | x -> match sez with
-        | [] -> failwith "Index out of range"
-        | h::t -> split_list_n (acc_n + 1) n (a::acc, h, t)
-    in
-    match states with
-      | [] -> Empty
-      | h::t -> 
-        let (list1, a, list2) = split_list_n 0 n ([], h, t) in
-        Node (bbst_creator (List.rev list1), a, bbst_creator list2)
-
-  let bbst_to_list bbs_tree = 
-    (* Vrne urejen seznam urejenega drevesa*)
-    let rec aux acc = function
-    | Empty -> acc
-    | Node (l, a, r) -> aux (a::aux acc r) l
-  in aux [] bbs_tree
-
-  let rec change_value key value = function
-    | Empty -> failwith "Key not found; change_value"
-    | Node (l, (k, v), r) ->
-      match key with
-      | key when key = k -> Node (l, (k, value), r)
-      | key when key < k -> Node (change_value key value l, (k, v), r)
-      | key when key > k -> Node (l, (k, v), change_value key value r)
-      | _ -> failwith "Comparison in change_value failed"
-  
-  (* Glavne funkcije *)
-
-  let make state_0 all_states = 
-    if List.mem state_0 all_states then failwith "Initial state name is duplicated" else
-    if let rec duplicate_finder = function
-        | [] -> true
-        | h::t -> if List.mem h t then false else duplicate_finder t
-      in not (duplicate_finder all_states) then failwith "Duplicate state name found" else
-    let sorted = List.sort compare (state_0::all_states) |> List.map (fun x -> (x, Empty)) in
-    let states_tree = bbst_creator sorted  in
-    (* Iskanje funkcije po drevesih je definirano v funkcije. Dodajanje prehoda bo spreminjalo drevo stanj.*)
-    let f (states_tree : states_dict) (x : char) (current_state : state) : ((char * state * direction) option) =
-      let rec f_sub (x : char) (tree : (char * (char * state * direction)) bbs_tree) =
-        match tree with
-        | Empty -> None
-        | Node (l, (a, out), r) ->
-          match x with
-          | x when x = a -> Some out
-          | x when x < a -> f_sub x l
-          | x when x > a -> f_sub x r
-          | _ -> failwith "Comparison in f_sub failed"
-      in
-      let rec f_main x q states =
-        match states with
-        | Empty -> failwith "Transition function preformed on non-existant state"
-        | Node (l, (a, sub_tree), r) ->
-          match q with
-          | q when q = a -> f_sub x sub_tree
-          | q when q < a -> f_main x q l
-          | q when q > a -> f_main x q r
-          | _ -> failwith "Comparison in f_main failed"
-      in f_main x current_state states_tree
-    in (states_tree, state_0, f)
-
-  let initial ((_, state_0, _) : t) = state_0
-
-  let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_tree, state_0, f) : t): t = 
-    (* Ta funkcija je implementirana skoraj po navodilih. Namesto da so preslikave del prehodne funkcije so le te vrednosti v slovarju stanj, 
-    ki so tudi sami slovarju. Prehodna funkcija le vrača te vrednosti oz. None, če stanje za določeno vrednost nima definirano preslikavo,
-    torej se prehodna funkcija z dodajanjem preslikav ne spreminja. Spreminja se slovar slovarjev stanj. *)
-    let states_tree' =
-      let aux_sub (tree : (char * (char * state * direction)) bbs_tree) ch1 q2 ch2 d =
-        let sez = bbst_to_list tree in
-        if List.mem ch1 (List.map (fun (x, _) -> x ) sez) then change_value ch1 (ch2, q2, d) tree
-        else (ch1, (ch2, q2, d))::sez |> List.sort compare |> bbst_creator
-      in 
-      let rec aux_main tree q1 ch1 q2 ch2 d =
-        match tree with
-        | Empty -> failwith ("Key " ^ q1 ^ " not found; aux_main")
-        | Node (l, (k, v), r) ->
-          match q1 with
-          | key when key = k -> Node (l, (k, aux_sub v ch1 q2 ch2 d), r)
-          | key when key < k -> Node (aux_main l q1 ch1 q2 ch2 d, (k, v), r)
-          | key when key > k -> Node (l, (k, v), aux_main r q1 ch1 q2 ch2 d)
-          | _ -> failwith "Comparison in aux_main failed"
-        in aux_main states_tree q1 ch1 q2 ch2 d
-    (* Muzejski artefakt *)
-    in let f' states_tree ch q=
-      match ch, q with
-      | ch, q when ch = ch1 && q = q1 -> Some (ch2, q2, d)
-      | ch, q -> f states_tree ch q 
-    in (states_tree, state_0, f')
-    
-  let step ((states_tree, state_0, f) : t) (q : state) (tape : Tape.t) = 
-    match f states_tree (Tape.read tape) q with
-      | None -> None
-      | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
-    
+      | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d) 
 end
 
 (*----------------------------------------------------------------------------*
@@ -703,22 +585,3 @@ let primer_to_binary = speed_run to_binary (String.make 42 '1')
 ^
 *)
 (* val primer_to_binary : unit = () *) 
-
-let busy_beaver5 =
-  Machine.(make "A" ["B"; "C"; "D"; "E"]
-  |> add_transition "A" ' ' "B" '1' Right
-  |> add_transition "A" '1' "C" '1' Left
-  |> add_transition "B" ' ' "C" '1' Right
-  |> add_transition "B" '1' "B" '1' Right
-  |> add_transition "C" ' ' "D" '1' Right
-  |> add_transition "C" '1' "E" ' ' Left
-  |> add_transition "D" ' ' "A" '1' Left
-  |> add_transition "D" '1' "D" '1' Left
-  |> add_transition "E" '1' "A" ' ' Left
-)
-
-let time f x =
-  let t = Sys.time() in
-  let fx = f x in
-  Printf.printf "Execution time: %fs\n" (Sys.time() -. t);
-  fx

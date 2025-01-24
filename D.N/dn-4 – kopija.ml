@@ -133,6 +133,41 @@ module type MACHINE = sig
 end
 
 module Machine : MACHINE = struct
+  module CharKey = struct
+    type t = char
+    let compare (ch1 : t) (ch2 : t) = compare ch1 ch2
+  end
+  module StringKey = struct
+    type t = state
+    let compare (s1 : t) (s2 :t) =  compare s1 s2
+  end
+  module CharDict = Map.Make(CharKey)
+  module StringDict = Map.Make(StringKey)
+  type preslikave = ((char * state * direction) CharDict.t) StringDict.t
+  type t = (state list) * state * preslikave
+
+  let make state_0 other_states : t =
+    let rec dict_maker dict = function
+      | [] -> dict
+      | h::t -> dict_maker (StringDict.add h CharDict.empty dict) t
+    in
+    ((state_0::other_states), state_0, dict_maker StringDict.empty (state_0::other_states))
+
+    let add_transition (q1 : state) (ch1 : char) (q2 : state) (ch2 : char) (d : direction) ((states_dict, state_0, f) : t): t =
+      let update key value = function
+        | None -> failwith ""
+        | Some preslikava -> Some (CharDict.add key value preslikava)
+    in (states_dict, state_0, f |> StringDict.update q1 (update ch1 (ch2, q2, d)))
+
+    let initial ((_, state_0, _) : t) = state_0
+
+    let step ((states_dict, state_0, f) : t) (q : state) (tape : Tape.t) =
+      match CharDict.find_opt (Tape.read tape) (StringDict.find q f) with
+      | None -> None
+      | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d) 
+end
+
+module Machine3 : MACHINE = struct
   module Dict = struct
     type t = state * char
     let compare (a : t) (b : t) = compare a b
@@ -150,8 +185,8 @@ module Machine : MACHINE = struct
     | None -> None
     | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
 end
-(*
-module Machine3 : MACHINE = struct
+
+module Machine2 : MACHINE = struct
   module CharKey = struct
     type t = char
     let compare (ch1 : t) (ch2 : t) = compare ch1 ch2
@@ -190,7 +225,7 @@ module Machine3 : MACHINE = struct
       | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
 end
 
-module Machine2 : MACHINE = struct
+module Machine1 : MACHINE = struct
   type 'a bbs_tree = (* Balanced binary search tree *)
   | Empty
   | Node of 'a bbs_tree * 'a * 'a bbs_tree
@@ -295,15 +330,14 @@ module Machine2 : MACHINE = struct
       match ch, q with
       | ch, q when ch = ch1 && q = q1 -> Some (ch2, q2, d)
       | ch, q -> f states_tree ch q 
-    in (states_tree, state_0, f')
+    in (states_tree', state_0, f)
     
   let step ((states_tree, state_0, f) : t) (q : state) (tape : Tape.t) = 
     match f states_tree (Tape.read tape) q with
       | None -> None
       | Some (a', q', d) -> Some (q', tape |> Tape.write a' |> Tape.move d)
-    
 end
-*)
+
 (*----------------------------------------------------------------------------*
  Primer stroja "Binary Increment" na <http://turingmachine.io> lahko
  implementiramo kot:
@@ -741,3 +775,5 @@ let time f x =
   let fx = f x in
   Printf.printf "Execution time: %fs\n" (Sys.time() -. t);
   fx
+
+let x = time (speed_run busy_beaver5) ""
